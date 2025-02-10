@@ -96,7 +96,7 @@ export class Observer {
      
      Object.defineProperty(arrayMethods, method, {
        	enumerable: false,
-         writable: true,
+         writable: true, 
          configurable: true 
          value: function mutator (...args) {  
              return original.apply(this, args);               
@@ -106,7 +106,7 @@ export class Observer {
  
  
  const hasProto = '__proto__' in {};
- const arrayKeys = Object.getOwnPropertyNames(arrayMethods);
+ const arrayKeys = Object.getOwnPro pertyNames(arrayMethods);
  
  export class Observer {
      constructor (value) {
@@ -136,3 +136,56 @@ export class Observer {
 
 
 ![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/3/3.3.png?raw=true)
+
+
+
+
+
+## 3.5 如何收集依赖
+
+```javascript
+function defineReactive(data, key, val) {
+    if (typeof val === 'object') new Observer(val);
+    let dep = new Dep();
+    Object.defineProperty(data, key, {
+        enumerable: true,
+        configurable: true,
+        get: function () {
+            dep.depend();
+            
+            return val;
+        },
+        set: function (newVal) {
+            if(val === newVal) {
+                return
+            }
+            
+            dep.notify();
+            val = newVal;
+        }
+    })
+}                                                                                                                               
+```
+
+
+
+## 3.6 依赖列表存在哪儿
+
+Vue.js 把 Array 的依赖存放在 Observer 中：
+
+ ```             javascript
+ export class Observer {
+     constructor (value) {
+         this.value = value;
+         this.dep = new Dep();
+         
+         if (Array.isArray(value)) {
+             const augment = hasProto ? protoAugment : copyAugment;
+             augment(value, arrayMethods, arrayKeys);
+         } else {
+             this.walk(value);                                                           
+         }
+     }
+ }
+ ```
+
