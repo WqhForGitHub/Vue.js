@@ -4,7 +4,7 @@
 
 本质上，**`我们将状态作为输入，并生成 DOM 输出到页面上显示出来，这个过程叫做渲染`** 。
 
-![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/5/5.1.png?raw=true)
+![                                                                                                                                                                            ](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/5/5.1.png?raw=true)
 
 
 
