@@ -2,6 +2,24 @@
 
 
 
+本质上，**`我们将状态作为输入，并生成 DOM 输出到页面上显示出来，这个过程叫做渲染`** 。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/5/5.1.png?raw=true)
+
+
+
+ 虚拟 DOM 的解决方式是通过 **`状态生成一个虚拟节点树`** ，然后使用 **`虚拟节点树进行渲染`** 。在渲染之前，会使用新生成的虚拟节点树和上一次生成的虚拟节点树进行对比，只渲染不同的部分。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/5/5.2.png?raw=true)
+
+
+
+虚拟节点树其实是由 **`组件树建立起来的整个虚拟节点（vnode）树`** 。
+
+
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/5/5.3.png?raw=true)
+
 
 
 # 5.2 为什么要引入虚拟 DOM
@@ -16,7 +34,21 @@
 
 # 5.3 Vue.js 中的虚拟 DOM
 
-​                            
+在 Vue.js 中，我们使用模板来描述状态与 DOM 之间的映射关系。Vue.js 通过编译将 **`模板转换成渲染函数（render）`** ， **`执行渲染函数就可以得到一个虚拟节点树，使用这个虚拟节点树就可以渲染页面`** 。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/5/5.4.png?raw=true)                            
 
 
 
+虚拟 DOM 的终极目标是将虚拟节点（vnode）渲染到视图上。但是如果直接使用虚拟节点覆盖旧节点的话，会有很多不必要的 DOM 操作。
+
+**`由于 DOM 操作比较慢，所以这些 DOM 操作在性能上会有一定的浪费，避免这些不必要的 DOM 操作会提升很大一部分性能 。为了避免不必要的 DOM 操作，虚拟 DOM 在虚拟节点映射到视图的过程中，将虚拟节点与上一次渲染视图所使用的旧虚拟节点（oldVnode）做对比，找出真正需要更新的节点来进行 DOM 操作，从而避免操作其他无任何改动的 DOM`** 。
+
+给出了虚拟 DOM 的整体运行流程，先将 vnode 与 oldVnode 做比对，然后再更新视图。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/5/5.5.png?raw=true)
+
+可以看出，虚拟 DOM 在 Vue.js 中所做的事情其实并没有想象中那么复杂，它主要做了两件事。
+
+* **`提供与真实 DOM 节点所对应的虚拟节点 vnode`** 
+* **`将虚拟节点 vnode 和旧虚拟节点 oldVnode 进行比对，然后更新视图`** 。
