@@ -1,4 +1,4 @@
-虚拟 DOM 最核心的部分是 **`patch`** ，它可以将  **`vnode 渲染成真实的 DOM`** 。 
+ 虚拟 DOM 最核心的部分是 **`patch`** ，它可以将  **`vnode 渲染成真实的 DOM`** 。 
 
 
 
@@ -214,4 +214,90 @@ vnode 和 oldVnode 不是静态节点，并且有不同的属性时，要以 vno
 
 **`删除子节点，本质上是删除那些 oldChildren 中存在但 newChildren 中不存在的节点`** 。                                                                                                                                                                                                                                                                                                                                                                                                                      
 
-​                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+
+
+## 2. 优化策略
+
+如果我们把这种很快速的查找节点的方式称为快捷查找，那么它共有 4 种查找方式，分别是：
+
+* **`新前与旧前`** 
+* **`新后与旧后`** 
+* **`新后与旧前`** 
+* **`新前与旧后`** 
+
+
+
+* **`新前：newChildren 中所有未处理的第一个节点`** 
+* **`新后：newChildren 中所有未处理的最后一个节点`** 
+* **`旧前：oldChildren 中所有未处理的第一个节点`** 
+* **`旧后：oldChildren 中所有未处理的最后一个节点`** 
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/7/7.17.png?raw=true)
+
+
+
+### 1. 新前与旧前
+
+顾名思义，新前与旧前的意思就是尝试使用新前这个节点与旧前这个节点对比，对比它们俩是不是同一个节点。如果是同一个节点，则说明我们不费吹灰之力就在 oldChildren 中找到了这个虚拟节点，然后使用 7.4 节中介绍的更新节点操作将它们俩进行对比并更新视图。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/7/7.18.png?raw=true)
+
+由于新前与旧前的位置相同，所以并不需要执行移动节点的操作，只需要更新节点即可。
+
+
+
+### 2. 新后与旧后
+
+当新前与旧前对比后发现不是同一个节点，这时可以尝试用新后与旧后的方式来比对它们俩是否是同一个节点。新后与旧后的意思是使用新后这个节点和旧后这个节点对比，对比它们俩是不是同一个节点。如果是同一个节点，就将这两个节点进行对比并更新视图。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/7/7.19.png?raw=true)
+
+由于新后与旧后这两个节点的位置相同，所以只需要执行更新节点的操作即可，不需要执行移动节点的操作。                                                                                                                                           
+
+
+
+### 3. 新后与旧前
+
+新后与旧前的意思是使用新后这个节点与旧前这个节点进行对比，通过对比来分辨它们俩是不是同一个节点。如果是同一个节点，就对比它们俩并更新视图。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/7/7.20.png?raw=true)
+
+如果新后与旧前是同一个节点，那么由于它们的位置不同，所以除了更新节点外，还需要执行移动节点的操作。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/7/7.21.png?raw=true)
+
+当新后与旧前是同一个节点时，在真实 DOM 中除了做更新操作外，还需要将节点移动到 oldChildren 中所有未处理节点的最后面。你可能对为什么移动到 oldChildren 中所有未处理节点的最后面感到困惑，接下来我们会详细介绍为什么移动到这个位置。更新节点是以新虚拟节点为基准，子节点也不例外，因为新后这个节点是最后一个节点，所以真实 DOM 中将节点移动到最后不难理解，让我们感到困惑的是为什么移动到 **`oldChildren 中所有未处理节点的最后面`**。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/7/7.22.png?raw=true)
+
+​                        
+
+### 4. 新前与旧后
+
+新前与旧后的意思是使用新前与旧后这两个节点进行对比，对比它们是否是同一个节点，如果是同一个节点，则进行更新节点的操作。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/7/7.23.png?raw=true)
+
+由于新前与旧后这两个节点的位置不同，所以除了更新节点的操作外，还需要进行移动节点的操作。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/7/7.24.png?raw=true)
+
+当新前与旧后是同一个节点时，在真实 DOM 中除了做更新操作外，还需要将节点移动到 oldChildren 中所有未处理节点的最前面。
+
+![](https://github.com/WqhForGitHub/Vue.js/blob/vue2%E6%BA%90%E4%BB%A3%E7%A0%81%E8%A7%A3%E6%9E%90/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BA%20Vue.js/static/7/7.25.png?raw=true)
+
+
+
+## 3. 哪些节点是未处理过的
+
+如何从两边向中间循环？
+
+首先，我们先准备 4 个变量：**`oldStartIdx、oldEndIdx、newStartIdx 和 newEndIdx`** 。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+
+当开始位置大于等于结束位置时，说明所有节点都遍历过了，则结束循环  ：
+
+```javascript
+while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {}
+```
+
+因为如果 oldChildren 先循环完毕，这个时候如果 newChildren 中还有剩余的节点，那么说明什么问题？说明这些节点都是需要新增的节点，直接把这些节点插入到 DOM 中就行了，不需要循环比对了。如果是 newChildren 先循环完毕，这时如果 oldChildren 还有剩余的节点，又说明了什么问题？这说明 oldChildren 中剩余的节点都是被废弃的节点，是应该被删除的节点。这时不需要循环对比就可以知道需要将这些节点从 DOM 中移除。找到 newChildren 中所有剩余的节点并不难，由于 oldChildren 先被循环完，所以此时 newStartIdx 肯定是小于 newEndIdx 的，那么在 newChildren 中，下标在 newStartIdx 和 newEndIdx 之间的所有节点都是未处理的节点。同理，找到 oldChildren 中所有剩余的节点也很简单。由于 newChildren 先被循环完，所以 oldStartIdx 小于 oldEndIdx，那么在 oldChildren 中，下标在 oldStartIdx 和 oldEndIdx 之间的所有节点都是未处理的节点。       
