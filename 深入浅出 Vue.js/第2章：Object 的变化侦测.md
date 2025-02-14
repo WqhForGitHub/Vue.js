@@ -4,7 +4,7 @@
 
 
 
-## 2.3 如何收集依赖                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+# 2.3 如何收集依赖                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 
 如何收集依赖？
 
@@ -28,7 +28,7 @@
 
 
 
-## 2.4 依赖收集在哪里
+# 2.4 依赖收集在哪里
 
 现在我们已经有了很明确的目标，就是要在 getter 中收集依赖，那么要把依赖收集到哪里去呢？
 
@@ -128,7 +128,7 @@ function defineReactive (data, key, val) {
 
 
 
-## 2.5 依赖是谁
+# 2.5 依赖是谁
 
 在上面的代码中，我们收集的依赖是 **`window.target`** ，那么它到底是什么？我们究竟要收集谁呢？
 
@@ -138,7 +138,7 @@ function defineReactive (data, key, val) {
 
 
 
-## 2.6 什么是 watcher
+# 2.6 什么是 watcher
 
 watcher 是一个中介的角色，数据发生变化时通知它，然后它再通知其他地方。
 
@@ -216,7 +216,7 @@ const invalidPath = parsePath('a.b[0]'); // returns undefined because of '['
 
 
 
-## 2.7 递归侦测所有 key
+# 2.7 递归侦测所有 key
 
 ```                           javascript
 export class Observer {
@@ -280,7 +280,7 @@ function defineReactive (data, key, val) {
 
 
 
-## 2.8 关于 Object 的问题                    
+# 2.8 关于 Object 的问题                    
 
 比如，向 object 添加属性：
 
@@ -329,4 +329,99 @@ Vue.js 通过 Object.defineProperty 来将对象的 key 转换成 getter/setter 
 但这也是没有办法的事，因为在 ES6 之前，JavaScript 没有提供元编程的能力，无法侦测到一个新属性被添加到了对象中，也无法侦测到一个属性从对象中删除了。为了解决这个问题，Vue.js 提供了两个 API，vm.$set 与 vm.$delete 。
 
 ​                                                                                                                                                                                                                                                                                                                                                     
+
+
+
+
+
+
+
+# devv 补充
+
+
+
+## 若计算属性依赖多个响应式数据，且这些数据在模板中分别被使用，Watcher 的创建数量如何变化？
+
+
+
+```vue
+<template>
+  <div>
+    <p>Data A: {{ dataA }}</p>
+    <p>Data B: {{ dataB }}</p>
+    <p>Computed value: {{ computedValue }}</p>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      dataA: 'initial value A',
+      dataB: 'initial value B'
+    };
+  },
+  computed: {
+    computedValue() {
+      return this.dataA + ' - ' + this.dataB;
+    }
+  }
+};
+</script>
+```
+
+在这个例子中：
+
+- `dataA` 和 `dataB` 是响应式数据，它们在模板中被直接使用。
+- `computedValue` 是一个计算属性，它依赖于 `dataA` 和 `dataB`。
+
+Watcher 的创建情况如下：
+
+1. **一个 watcher 用于计算属性 `computedValue`**：这个 watcher 负责追踪 `dataA` 和 `dataB` 的变化。当 `dataA` 或 `dataB` 的值发生变化时，`computedValue` 会重新计算。
+2. **一个组件级别的 watcher**：Vue 会创建一个组件级别的 watcher 来追踪模板中直接使用的响应式数据 `dataA` 和 `dataB`。这个 watcher 确保当 `dataA` 或 `dataB` 发生变化时，组件能够重新渲染，从而更新视图。
+
+**`在这种情况下，Vue 2.0 会创建两个 watcher：`** 
+
+- **`一个 watcher 用于计算属性，负责追踪计算属性的依赖。`**
+- **`一个组件级别的 watcher，负责追踪模板中直接使用的响应式数据。`** 
+
+**`计算属性的 watcher 确保计算属性的值始终是最新的，而组件级别的 watcher 确保模板中的所有响应式数据都能正确地触发组件的更新。`** 
+
+
+
+## 若Vue 2.0组件中data属性使用了深度嵌套对象，且无computed和watch，会创建多少个watcher?
+
+```vue
+<template>
+  <div>
+    <p>Name: {{ user.profile.name }}</p>
+    <p>Age: {{ user.profile.details.age }}</p>
+    <p>City: {{ user.address.city }}</p>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      user: {
+        profile: {
+          name: 'John Doe',
+          details: {
+            age: 30
+          }
+        },
+        address: {
+          city: 'New York'
+        }
+      }
+    };
+  }
+};
+</script>
+```
+
+**`在 Vue 2.0 组件中，如果 data 属性使用了深度嵌套对象，且没有 computed 和 watch，仍然只会创建一个组件级别的 watcher。这个 watcher 负责追踪模板中使用的所有响应式 data 属性，包括深度嵌套对象中的属性，确保组件能够响应数据的变化并更新视图。`** 
+
+
 
