@@ -108,3 +108,70 @@ export default class Watcher {
 }
 ```
 
+
+
+
+
+# 4.2 vm.$set
+
+
+
+## 1. 用法
+
+vm.$set 的用法如下。
+
+```javascript
+vm.$set(target, key, value);
+```
+
+* 参数：
+  * { Object | Array }  target
+  * { string | number }  key
+  * { any }  value
+* 返回值：{ Function }：unwatch 
+
+举个例子：
+
+```javascript
+var vm = new Vue({
+    el: "#el",
+    template: "#demo-template",
+    data: {
+        obj: {}
+    }
+})
+```
+
+
+
+**`在上述代码中，data 中有一个 obj 对象。如果直接给 obj 设置一个属性，例如：`**
+
+```javascript
+var vm = new Vue({
+    el: "#el",
+    template: "#demo-template",
+    methods: {
+        action() {
+            this.obj.name = "berwin"
+        }
+    },
+    data： {
+    	obj: {}
+	}
+})
+```
+
+​                                                                                                                                                                                                                                   
+
+## 2. Array 的处理
+
+```javascript
+export function set(target, key, val) {
+    if (Array.isArray(target) && isValidArrayIndex(key)) {
+        target.length = Math.max(target.length, key);
+        target.splice(key, 1, val);
+        return val;
+    }                                                                    
+}
+```
+
