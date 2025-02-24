@@ -422,3 +422,183 @@ const styleObject = reactive({
 
 
 
+
+
+# 条件渲染
+
+
+
+## **`v-if`**
+
+**`v-if 指令用于条件地渲染一块内容。这块内容只会在指令的表达式返回真值时才被渲染。`**
+
+```vue
+<h1 v-if="awesome">Vue is awesome!</h1>
+```
+
+
+
+## `v-else`
+
+**`你也可以使用 v-else 为 v-if 添加一个 else 区块。`**
+
+```vue
+<button @click="awesome = !awesome">Toggle</button>
+
+<h1 v-if="awesome">Vue is awesome!</h1>
+<h1 v-else>Oh no</h1>
+```
+
+**`一个 v-else 元素必须跟在一个 v-if 或者 v-else-if 元素后面，否则它将不会被识别。`**
+
+
+
+## `v-else-if`
+
+顾名思义，v-else-if 提供的是相应于 v-if 的 else if 区块。它可以连续多次重复使用：
+
+```vue
+<div v-if="type === 'A'">
+    A
+</div>
+
+<div v-if="type === 'B'">
+    B
+</div>
+
+<div v-if="type === 'C'">
+    C
+</div>
+
+<div v-else>
+    Not A/B/C
+</div>
+```
+
+**`和 v-else 类似，一个使用 v-else-if 的元素必须紧跟在一个 v-if 或一个 v-else-if 元素后面。`**
+
+
+
+## `v-show`
+
+**`另一个可以用来按条件显示一个元素的指令是 v-show。其用法基本一样：`**
+
+```vue
+<h1 v-show="ok">Hello!</h1>
+```
+
+**`不同之处在于 v-show 会在 DOM 渲染中保留该元素，v-show 仅切换了该元素上名为 display 的 CSS 属性。`**
+
+**`v-show 不支持在 <template> 元素上使用，也不能和 v-else 搭配使用。`**
+
+
+
+
+
+# 列表渲染
+
+
+
+## `v-for`
+
+**`我们可以使用 v-for 指令基于一个数组来渲染一个列表。v-for 指令的值需要使用 item in items 形式的特殊语法，其中 items 是源数据的数组，而 item 是迭代项的别名：`**
+
+```javascript
+const items = ref([{ message: "Foo" }, { message: "Bar" }]);
+```
+
+```vue
+<li v-for="item in items">
+    {{ item.message }}
+</li>
+```
+
+
+
+
+
+## `v-for` 与对象
+
+**`你也可以使用 v-for 来遍历一个对象的所有属性。遍历的顺序会基于对该对象调用 Object.values() 的返回值来决定。`**
+
+```javascript
+const myObject = reactive({
+    title: "How to do lists in Vue",
+    author: "Jane Doe",
+    publishedAt: "2016-04-10"
+})
+```
+
+```vue
+<ul>
+    <li v-for="value in myObject">
+        {{ value }}
+    </li>
+</ul>
+```
+
+**`可以通过提供第二个参数表示属性名（例如 key）：`**
+
+```vue
+<li v-for="(value, key) in myObject">
+    {{ key }}: {{ value }}
+</li>
+```
+
+**`第三个参数表示位置索引：`**
+
+```vue
+<li v-for="(value, key, index) in myObject">
+    {{ index }}. {{ key }}: {{ value }}
+</li>
+```
+
+
+
+
+
+## 在 v-for 里使用范围值
+
+**`v-for 可以直接接受一个整数值。在这种用例中，会将模板基于 1...n 的取值范围重复多次。`**
+
+```vue
+<span v-for="n in 10">{{ n }}</span>
+```
+
+**`注意此处 n 的初值是从 1 开始而非 0`**。
+
+
+
+
+
+# 事件处理
+
+
+
+## 监听事件
+
+**`我们可以使用 v-on 指令（简写为 @）来监听 DOM 事件，并在事件触发时执行对应的 JavaScript。用法：v-on:click="handler" 或 @click="handler"。`**
+
+**`事件处理器（handler）的值可以是：`** 
+
+**`1. 内联事件处理器：事件被触发时执行的内联 JavaScript 语句（与 onclick 类似）。`**
+
+**`2. 方法事件处理器：一个指向组件上定义的方法的属性名或是路径。`**
+
+
+
+## 内联事件处理器
+
+**`内联事件处理器通常用于简单场景，例如：`**
+
+```javascript
+const count = ref(0);
+```
+
+```vue
+<button @click="count++">Add 1</button>
+<p>Count is: {{ count }}</p>
+```
+
+
+
