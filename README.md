@@ -602,3 +602,403 @@ const count = ref(0);
 
 
 
+
+
+## 方法事件处理器
+
+**`随着事件处理器的逻辑变得愈发复杂，内联代码方式变得不够灵活。因此 v-on 也可以接受一个方法名或对某个地方的调用。`**
+
+**`举例来说：`**
+
+```javascript
+const name = ref("Vue.js");
+
+function greet(event) {
+    console.log(`Hello ${name.value}`);
+    
+    if (event) {
+        console.log(event.target.tagName);
+    }
+}
+```
+
+```vue
+<button @click="greet">Greet</button>
+```
+
+
+
+
+## 在内联事件处理器中访问事件参数
+
+**`有时我们需要在内联事件处理器中访问原生 DOM 事件。你可以向该处理器方法传入一个特殊的 $event 变量，或者使用内联箭头函数：`**
+
+```vue
+<!-- 使用特殊的 $event 变量 -->
+<button @click="warn("Form cannot be submitted yet.", $event)">
+    Submit
+</button>
+
+<!-- 使用内联箭头函数 -->
+<button @click="(event) => warn("Form cannot be submitted yet.", event)">
+    Submit
+</button>
+```
+
+```javascript
+function warn(message, event) {
+    if (event) {
+        event.preventDefault();
+    }
+}
+```
+
+
+
+
+
+## 事件修饰符
+
+**`在处理事件时调用 event.preventDefault() 或 event.stopPropagation() 是很常见的。尽管我们可以直接在方法内调用，但如果方法能更专注于数据逻辑而不用去处理 DOM 事件的细节会更好。`**
+
+**`为解决这一问题，Vue 为 v-on 提供了事件修饰符。修饰符是用 . 表示的指令后缀，包含以下这些：`**
+
+* **`.stop`**
+* **`.prevent`**
+* **`.self`**
+* **`.capture`**
+* **`.once`**
+* **`.passive`**
+
+```vue
+<!-- 单击事件将停止传递 -->
+<a @click.stop="doThis"></a>
+
+<!-- 提交事件将不再重新加载页面 -->
+<form @submit.prevent="onSubmit"></form>
+
+<!-- 修饰语可以使用链式书写 -->
+<a @click.stop.prevent="doThat"></a>
+
+<!-- 也可以只有修饰符 -->
+<form @submit.prevent></form>
+
+<!-- 仅当 event.target 是元素本身时才会触发事件处理器 -->
+<!-- 例如：事件处理器不来自子元素 -->
+<div @click.self="doThat"></div>
+```
+
+**`使用修饰符需要注意调用顺序，因为相关代码是以相同的顺序生成的。因此使用 @click.prevent.self 会阻止元素及其子元素的所有点击事件的默认行为，而 @click.self.prevent 则只会阻止对元素本身的点击事件的默认行为。`**
+
+
+
+* **`.capture`**
+* **`.once`**
+* **`.passive`**
+
+**`.capture、.once 和 .passive 修饰符与原生 addEventListener 事件相对应：`**
+
+```vue
+<!-- 添加事件监听器时，使用 capture 捕获模式 -->
+<!-- 例如：指向内部元素的事件，在被内部元素处理前，先被外部处理 -->
+<div @click.capture="doThis">...</div>
+
+<!-- 点击事件最多被触发一次 -->
+<a @click.once="doThis"></a>
+
+<!-- 滚动事件的默认行为（scrolling）将立即发生而非等待 onScroll 完成 -->
+<!-- 以防其中包含 event.preventDefault() -->
+<div @scroll.passive="onScroll">...</div>
+```
+
+
+
+**`.passive 修饰符一般用于触摸事件的监听器，可以用来改善移动端设备的滚屏性能。`** 
+
+**`请勿同时使用 .passive 和 .prevent，因为 .passive 已经向浏览器表明了你不想阻止事件的默认行为。如果你这么做了，则 .prevent 会被忽略，并且浏览器会抛出警告。`**
+
+
+
+## 按键修饰符
+
+**`在监听键盘事件时，我们经常需要检查特定的按键。Vue 允许在 v-on 或 @ 监听按键事件时添加按键修饰符。`**
+
+```vue
+<!-- 仅在 key 为 Enter 时调用 submit -->
+<input @keyup.enter="submit" />
+```
+
+
+
+### 按键别名
+
+**`Vue 为一些常用的按键提供了别名：`**
+
+* **`.enter`**
+* **`.tab`**
+* **`.delete`**
+* **`.esc`**
+* **`.space`**
+* **`.up`**
+* **`.down`**
+* **`.left`**
+* **`.right`**
+
+
+
+### 系统按键修饰符
+
+**`你可以使用以下系统按键修饰符来触发鼠标或键盘事件监听器，只有当按键被按下时才会触发。`**
+
+* **`.ctrl`**
+* **`.alt`**
+* **`.shift`**
+* **`.meta`**
+
+**`举例来说：`**
+
+```vue
+<!-- Alt + Enter -->
+<input @keyup.alt.enter="clear" />
+
+<!-- Ctrl + 点击 -->
+<div @click.ctrl="doSomething">Do something</div>
+```
+
+
+
+## **`.exact` 修饰符**
+
+**`.exact 修饰符允许精确控制触发事件所需的系统修饰符的组合。`**
+
+```vue
+<!-- 当按下 Ctrl 时，即使同时按下 Alt 或 Shift 也会触发 -->
+<button @click.ctrl="onClick">A</button>
+
+<!-- 仅当按下 Ctrl 且未按任何其他键时才会触发 -->
+<button @click.ctrl.exact="onCtrlClick">A</button>
+
+<!-- 仅当没有按下任何系统按键时触发 -->
+<button @click.exact="onClick">A</button>
+```
+
+
+
+
+
+# 表单输入绑定
+
+```html
+<input :value="text" @input="event => text = event.target.value" />
+```
+
+**`v-model 指令帮我们简化了这一步骤：`**
+
+```html
+<input v-model="text" >
+```
+
+
+
+
+
+## 修饰符
+
+
+
+### **`.lazy`**
+
+**`默认情况下，v-model 会在每次 input 事件后更新数据。你可以添加 lazy 修饰符来改为在每次 change 事件后更新数据：`**
+
+```html
+<!-- 在 change 事件后同步更新而不是 input -->
+<input v-model.lazy="msg" />
+```
+
+
+
+### `.number`
+
+**`如果你想让用户输入自动转换为数字，你可以在 v-model 后添加 .number 修饰符来管理输入：`**
+
+```html
+<input v-model.number="age"  />
+```
+
+
+
+### `.trim`
+
+**`如果你想要默认自动去除用户输入内容中两端的空格，你可以在 v-model 后添加 .trim 修饰符：`**
+
+```html
+<input v-model.trim="msg" />
+```
+
+
+
+
+
+
+
+# 生命周期钩子
+
+
+
+## 注册周期钩子
+
+**`举例来说，onMounted 钩子可以用来在组件完成初始渲染并创建 DOM 节点后运行代码：`**
+
+```vue
+<script setup>
+import { onMounted } from "vue";
+
+onMounted(() => {
+    console.log(`the component is now mounted.`)
+})
+</script>
+```
+
+
+
+
+
+# 侦听器
+
+
+
+## 基本示例
+
+**`计算属性允许我们声明性地计算衍生值。然而在有些情况下，我们需要在状态变化时执行一些副作用：例如更改 DOM，或是根据异步操作的结果去修改另一处的状态。`**
+
+**`在组合式 API 中，我们可以使用 watch 函数在每次响应式状态发生变化时触发回调函数：`**
+
+```vue
+<template>
+	<p>
+      Ask a yes/no question:
+      <input v-model="question" :disabled="loading" />
+    </p>
+
+	<p>{{ answer }}</p>
+</template>
+
+<script setup>
+import { ref, watch } from "vue";
+
+const question = ref("");
+const answer = ref("Questions usually contain a question mark. ;-)");
+const loading = ref(false);
+
+// 可以直接侦听一个 ref
+watch(question, async (newQuestion, oldQuestion) => {
+    if (newQuestion.includes("?")) {
+        loading.value = true;
+        answer.value = "Thinking...";
+        
+        try {
+            const res = await fetch("https://yesno.wtf/api");
+            answer.value = (await res.json()).answer;
+        } catch (error) {
+            answer.value = "Error! Could not reach the API. " + error
+        } finally {
+            loading.value = false;
+        }
+    }
+})
+</script>
+```
+
+
+
+
+
+## 侦听数据源类型
+
+```javascript
+const x = ref(0);
+const y = ref(0);
+
+// 单个 ref
+watch(x, (newX) => {
+    console.log(`x is ${newX}`);
+})
+
+
+// getter 函数
+watch(
+    () => x.value + y.value,
+    (sum) => {
+        console.log(`sum of x + y is: ${sum}`)
+    }
+)
+
+
+// 多个来源组成的数组
+watch([x, () => y.value], ([newX, newY]) => {
+    console.log(`x is ${newX} and y is ${newY}`);
+})
+```
+
+
+
+**`注意，你不能直接侦听响应式对象的属性值，例如：`**
+
+```javascript
+const obj = reactive({ count: 0 });
+
+// 错误，因为 watch() 得到的参数是一个 number
+watch(obj.count, (count) => {
+    console.log(`Count is: ${count}`)
+})
+```
+
+
+
+**`这里需要用一个返回该属性的 getter 函数：`**
+
+```javascript
+// 提供一个 getter 函数
+watch(
+    () => obj.count,
+    (count) => {
+        console.log(`Count is: ${count}`)
+    }
+)
+```
+
+
+
+
+
+## 深层侦听器
+
+**`直接给 watch() 传入一个响应式对象，会隐式地创建一个深层侦听器，该回调函数在所有嵌套的变更时都会被触发：`**
+
+```javascript
+const obj = reactive({ count: 0 });
+
+watch(obj, (newValue, oldValue) => {});
+```
+
+**`相比之下，一个返回响应式对象的 getter 函数，只有在返回不同的对象时，才会触发回调：`**
+
+```javascript
+watch(
+    () => state.someObject,
+    () => {}
+)
+```
+
+**`你也可以给上面这个例子显式地加上 deep 选项，强制转成深层侦听器：`**
+
+```javascript
+watch(
+    () => state.someObject,
+    (newValue, oldValue) => {},
+    { deep: true }
+)
+```
+
+
+
