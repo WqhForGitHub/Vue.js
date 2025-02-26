@@ -1002,3 +1002,49 @@ watch(
 
 
 
+
+
+## 即时回调的侦听器
+
+```javascript
+watch(source, (newValue, oldValue) => {}, { immediate: true })
+```
+
+
+
+
+
+## `watchEffect()`
+
+**`在 watchEffect 中，只要 price、discount 和 finalPrice 这三个响应式数据中的任何一个发生变化，回调函数就会重新执行。watchEffect 的作用是追踪回调函数中使用的所有响应式依赖，并在任何一个依赖项发生变化时触发回调函数的重新执行。`**
+
+```vue
+<template>
+  <div>
+    <p>Price: {{ price }}</p>
+    <p>Discount: {{ discount }}</p>
+    <p>Final Price: {{ finalPrice }}</p>
+    <button @click="applyDiscount">Apply Discount</button>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watchEffect } from 'vue';
+
+const price = ref(100);
+const discount = ref(0);
+
+const applyDiscount = () => {
+  discount.value = 0.2;
+};
+
+const finalPrice = computed(() => {
+  return price.value * (1 - discount.value);
+});
+
+watchEffect(() => {
+  console.log(`Price: ${price.value}, Discount: ${discount.value}, Final Price: ${finalPrice.value}`);
+});
+</script>
+```
+
