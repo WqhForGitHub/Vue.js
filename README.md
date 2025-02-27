@@ -1,4 +1,4 @@
-# 响应式基础
+# 一、响应式基础
 
 
 
@@ -183,7 +183,7 @@ callSomeFunction(state.count);
 
 
 
-# 计算属性
+# 二、计算属性
 
 
 
@@ -241,7 +241,7 @@ const publishedBooksMessage = computed(() => {
 
 
 
-# Class 与 Style 绑定
+# 三、Class 与 Style 绑定
 
 
 
@@ -424,7 +424,7 @@ const styleObject = reactive({
 
 
 
-# 条件渲染
+# 四、条件渲染
 
 
 
@@ -495,7 +495,7 @@ const styleObject = reactive({
 
 
 
-# 列表渲染
+# 五、列表渲染
 
 
 
@@ -571,7 +571,7 @@ const myObject = reactive({
 
 
 
-# 事件处理
+# 六、事件处理
 
 
 
@@ -786,7 +786,7 @@ function warn(message, event) {
 
 
 
-# 表单输入绑定
+# 七、表单输入绑定
 
 ```html
 <input :value="text" @input="event => text = event.target.value" />
@@ -841,7 +841,7 @@ function warn(message, event) {
 
 
 
-# 生命周期钩子
+# 八、生命周期钩子
 
 
 
@@ -863,7 +863,161 @@ onMounted(() => {
 
 
 
-# 侦听器
+# 九、模板引用
+
+
+
+## 访问模板引用
+
+**`3.5 的用法：要在组合式 API 中获取引用，我们可以使用辅助函数 useTemplateRef()：`**
+
+```vue
+<template>
+	<input ref="my-input" />
+</template>
+
+<script setup>
+import { useTemplateRef, onMounted } from "vue";
+
+const input = useTemplateRef("my-input");
+    
+onMounted(() => {
+    input.value.focus();
+})
+</script>
+```
+
+
+
+
+
+**`3.5 前的用法：我们需要声明一个与模板里 ref attribute 匹配的引用：`**
+
+```vue
+<template>
+	<input ref="input" />
+</template>
+
+<script setup>
+import { ref, onMounted } from "vue";
+
+const input = ref(null);
+    
+onMounted(() => {
+    input.value.focus();
+})
+</script>
+```
+
+
+
+
+
+## `v-for` 中的模板引用
+
+**`3.5 的用法：当在 v-for 中使用模板引用时，对应的 ref 中包含的值是一个数组，它将在元素被挂载后包含对应整个列表的所有元素：`**
+
+```vue
+<template>
+	<ul v-for="item in list" ref="items">
+        {{ item }}
+    </ul>
+</template>
+
+<script setup>
+import { ref, useTemplateRef, onMounted } from "vue";
+
+const list = ref([]);
+    
+const itemsRefs = useTemplateRef("items");
+    
+onMounted(() => console.log(itemRefs.value));
+</script>
+```
+
+
+
+**`3.5 前的用法：useTemplateRef() 尚未引入，需要声明一个与模板引用 attribute 同名的 ref。该 ref 的值需要是一个数组。`**
+
+```vue
+<template>
+	<ul>
+       <li v-for="item in list" ref="itemRefs">
+           {{ item }}
+       </li> 
+    </ul>
+</template>
+
+<script setup>
+import { ref, onMounted } from "vue";
+
+const list = ref([]);
+    
+const itemRefs = ref([]);
+    
+onMounted(() => console.log(itemRefs.value));
+</script>
+```
+
+**`应该注意的是，ref 数组并不保证与源数组相同的顺序。`**
+
+
+
+
+
+## 组件上的 ref
+
+**`3.5 的用法：模板引用也可以被用在一个子组件上。这种情况下引用中获得的值是组件实例：`**
+
+```vue
+<template>
+	<Child ref="child"></Child>
+</template>
+
+<script setup>
+import { useTemplateRef, onMounted } from "vue";
+import Child from "./Child.vue";
+    
+const childRef = useTemplateRef("child");
+
+onMounted(() => {
+    // childRef.value 将持有 <Child /> 的实例
+})
+</script>
+```
+
+
+
+**`3.5 前的用法：`**
+
+```vue
+<template>
+	<Child ref="child" />
+</template>
+
+<script setup>
+import { ref, onMounted } from "vue";
+import Child from "./Child.vue";
+    
+const child = ref(null);
+    
+onMounted(() => {
+    // child.value 是 <Child /> 组件的实例
+});
+</script>
+```
+
+
+
+
+
+
+
+
+
+
+
+# 十、侦听器
 
 
 
@@ -1048,3 +1202,338 @@ watchEffect(() => {
 </script>
 ```
 
+
+
+
+
+# 十一、组件基础
+
+
+
+## 使用组件
+
+```vue
+<script setup>
+import ButtonCounter from "./ButtonCounter.vue";
+</script>
+
+<template>
+	<h1>Here is a child component!</h1>
+	<ButtonCounter />
+</template>
+```
+
+
+
+
+
+## 传递 props
+
+```vue
+<script setup>
+defineProps(["title"]);
+</script>
+
+<template>
+	<h4>{{ title }}</h4>
+</template>
+```
+
+
+
+```javascript
+const props = defineProps(["title"]);
+
+console.log(props.title);
+```
+
+
+
+**`如果你没有使用 <script setup>，props 必须以 props 选项的方式声明，props 对象会作为 setup() 函数的第一个参数被传入：`**
+
+```javascript
+export default {
+    props: ["title"],
+    setup(props) {
+        console.log(props.title);
+    }
+}
+```
+
+
+
+
+
+## 监听事件
+
+```vue
+<BlogPost @enlarge-text="postFontSize += 0.1" />
+```
+
+```vue
+<template>
+	<div class="blog-post">
+        <h4>{{ title }}</h4>
+        <button @click="$emit("enlarge-text")">Enlarge text</button>
+    </div>
+</template>
+```
+
+
+
+**`我们可以通过 defineEmits 宏来声明需要抛出的事件：`**
+
+```vue
+<script setup>
+defineProps(["title"]);
+defineEmits(["enlarge-text"]);
+</script>
+```
+
+
+
+**`和 defineProps 类似，defineEmits 仅可用于 <script setup> 之中，并且不需要导入，它返回一个等同于 $emit 方法的 emit 函数。它可以被用于在组件的 <script setup> 中抛出事件，因为此处无法直接访问 $emit：`**
+
+```vue
+<script setup>
+const emit = defineEmits(["enlarge-text"]);
+    
+emit("enlarge-text");
+</script>
+```
+
+
+
+**`如果你没有在使用 <script setup>，你可以通过 emits 选项定义组件会抛出的事件。你可以从 setup() 函数的第二个参数，即 setup 上下文对象上访问到 emit 函数：`**
+
+```javascript
+export default {
+    emits: ["enlarge-text"],
+    setup(props, ctx) {
+        ctx.emit("enlarge-text");
+    }
+}
+```
+
+
+
+## 通过插槽来分配内容
+
+**`一些情况下我们会希望能和 HTML 元素一样向组件中传递内容：`**
+
+```vue
+<AlertBox>
+    Something bad happened.
+</AlertBox>
+```
+
+
+
+**`这可以通过 Vue 的自定义 <slot> 元素来实现：`**
+
+```vue
+<template>
+	<div class="alert-box">
+        <strong>This is an Error for Demo Purposes</strong>
+        <slot />
+    </div>
+</template>
+```
+
+**`如上所示，我们使用 <slot> 作为一个占位符，父组件传递进来的内容就会渲染在这里。`**
+
+
+
+
+
+## 动态组件
+
+```vue
+<template>
+	<div>
+        <component :is="currentComponent"></component>
+    </div>
+</template>
+
+<script setup>
+import { ref } from "vue";
+import ComponentA from "./components/ComponentA.vue";
+import ComponentB from "./components/ComponentB.vue";
+    
+const currentComponent = ref("ComponentA"); 
+</script>
+```
+
+
+
+## DOM 内模板解析注意事项
+
+
+
+### 大小写区分
+
+```javascript
+// JavaScript 中的 camelCase
+const BlogPost = {
+    props: ["postTitle"],
+    emits: ["updatePost"],
+    template: `
+    	<h3>{{ postTitle }}</h3>
+    `
+}
+```
+
+```vue
+<!-- HTML 中的 kebab-case -->
+<blog-post post-title="hello!" @update-post="onUpdatePost"></blog-post>
+```
+
+
+
+
+
+### 闭合标签
+
+**`我们在上面的例子中已经使用过了闭合标签：`**
+
+```vue
+<MyComponent />
+```
+
+
+
+**`这是因为 Vue 的模板解析器支持任意标签使用 /> 作为标签关闭的标志。`**
+
+**`然而在 DOM 内模板中，我们必须显式地写出关闭标签：`**
+
+```vue
+<my-component></my-component>
+```
+
+
+
+```vue
+<my-component /> <!-- 我们想要在这里关闭标签 -->
+<span>hello</span>
+```
+
+
+
+**`将被解析为：`**
+
+```vue
+<my-component>
+    <span>hello</span>
+</my-component> <!-- 但浏览器会在这里关闭标签 -->
+```
+
+
+
+### 元素位置限制
+
+**`某些 HTML 元素对于放在其中的元素类型有限制，例如 <ul>，<ol>，<table> 和 <select>，相应的，某些元素仅在放置于特定元素中时才会显示，例如 <li>、<tr> 和 <option>。`**
+
+**`这将导致在使用带有此类限制元素的组件时出现问题。例如：`**
+
+```vue
+<table>
+    <blog-post-row></blog-post-row>
+</table>
+```
+
+
+
+**`自定义的组件 <blog-post-row> 将作为无效的内容被忽略，因而在最终呈现的输出中造成错误。我们可以使用特殊的 is attribute 作为一种解决方案：`**
+
+```vue
+<table>
+    <tr is="vue:blog-post-row"></tr>
+</table>
+```
+
+
+
+
+
+
+
+
+
+## 十二、组件注册
+
+
+
+## 全局注册
+
+**`我们可以使用 Vue 应用实例的 .component() 方法，让组件在当前 Vue 应用中全局可用。`**
+
+```javascript
+import { createApp } from "vue";
+
+const app = createApp({});
+
+app.component("myComponent", { /* 组件的实现 */ });
+```
+
+
+
+**`如果使用单文件组件，你可以注册被导入的 .vue 文件：`**
+
+```javascript
+import MyComponent from "./App.vue";
+
+app.component("MyComponent", MyComponent);
+```
+
+
+
+**`.component() 方法可以被链式调用：`**
+
+```javascript
+app.component("ComponentA", ComponentA).component("ComponentB", ComponentB).component("ComponentC", ComponentC);
+```
+
+
+
+**`全局注册的组件可以在此应用的任意组件的模板中使用：`**
+
+```vue
+<ComponentA />
+<ComponentB />
+<ComponentC />
+```
+
+
+
+
+
+## 局部注册
+
+**`在使用 <script setup> 的单文件组件中，导入的组件可以直接在模板中使用，无需注册：`**
+
+```vue
+<template>
+	<ComponentA />
+</template>
+
+<script setup>
+import ComponentA from "./ComponentA.vue";
+</script>
+```
+
+
+
+**`如果没有使用 <script setup>，则需要使用 components 选项来显式注册：`**
+
+```javascript
+import ComponentA from "./ComponentA.js";
+
+export default {
+    components: {
+        ComponentA
+    },
+    setup() {}
+}
+```
+
+**`请注意：局部注册的组件在后代组件中不可用。在这个例子中，ComponentA 注册后仅在当前组件可用，而在任何的子组件或更深层的子组件中都不可用。`**
