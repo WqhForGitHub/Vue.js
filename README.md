@@ -1459,7 +1459,7 @@ const BlogPost = {
 
 
 
-## 十二、组件注册
+# 十二、注册
 
 
 
@@ -1537,3 +1537,255 @@ export default {
 ```
 
 **`请注意：局部注册的组件在后代组件中不可用。在这个例子中，ComponentA 注册后仅在当前组件可用，而在任何的子组件或更深层的子组件中都不可用。`**
+
+
+
+
+
+# 十三、Props
+
+
+
+## Props 声明
+
+**`在使用 <script setup> 的单文件组件中，props 可以使用 defineProps() 宏来声明：`**
+
+```vue
+<script setup>
+const props = defineProps(["foo"]);
+    
+console.log(props.foo);
+</script>
+```
+
+**`在没有使用 <script setup> 的组件中，props 可以使用 props 选项来声明：`**
+
+```javascript
+export default {
+    props: ["foo"],
+    setup(props) {
+        console.log(props.foo);
+    }
+}
+```
+
+**`注意传递给 defineProps 的参数和提供给 props 选项的值是相同的，两种声明方式背后其实使用的都是 props 选项。`**
+
+**`除了使用字符串数组来声明 props 外，还可以使用对象的形式：`**
+
+```javascript
+<!-- 使用 <script setup> -->
+defineProps({
+    title: String,
+    likes: Number
+})
+```
+
+```javascript
+// 非 <script setup>
+export default {
+    props: {
+        title: String,
+        likes: Number
+    }
+}
+```
+
+
+
+
+
+## 响应式 Props 解构
+
+
+
+### 将解构的 props 传递到函数中
+
+```javascript
+const { foo } = defineProps(["foo"]);
+
+watch(() => foo)
+```
+
+
+
+
+
+## 单向数据流
+
+1. **`prop 被用于传入初始值；而子组件想在之后将其作为一个局部模板属性。在这种情况下，最好是新定义一个局部数据属性，从 props 上获取初始值即可：`**
+
+```javascript
+const props = defineProps(["initialCounter"]);
+
+const counter = ref(props.initialCounter);
+```
+
+2. **`需要对传入的 prop 值做进一步转换。在这种情况下，最好是基于该 props 值定义一个计算属性：`**
+
+```javascript
+const props = defineProps(["size"]);
+
+// 该 prop 变更时计算属性也会自动更新
+const normalizedSize = computed(() => props.size.trim().toLowerCase())
+```
+
+
+
+
+
+## Prop 校验
+
+```javascript
+defineProps({
+    propA: Number,
+    propB: [String, Number],
+    propC: {
+        type: String,
+        required: true
+    },
+    propD: {
+        type: [String, null],
+        required: true
+    },
+    propE: {
+        type: Number,
+        default: 100
+    },
+    propF: {
+        type: Object,
+        default(rawProps) {
+            return { message: "hello" }
+        }
+    },
+    propG: {
+        validator(value) {
+            return ["success", "warning", "danger"].includes(value)
+        }
+    },
+    propH: {
+        type: Function,
+        default() {
+            return "Default function"
+        }
+    }
+})
+```
+
+
+
+
+
+# 十四、组件事件
+
+
+
+## 触发与监听事件
+
+**`在组件的模板表达式中，可以直接使用 $emit 方法触发自定义事件（例如：在 v-on 的处理函数中）：`**
+
+```vue
+<!-- MyComponent -->
+<button @click="$emit("someEvent")"></button>
+```
+
+
+
+**`父组件可以通过 v-on（缩写为 @）来监听事件：`**
+
+```html
+<MyComponent @some-event="callback"></MyComponent>
+```
+
+**`同样，组件的事件监听器也支持 .once 修饰符：`**
+
+```vue
+<MyComponent @some-event.once="callback"></MyComponent>
+```
+
+
+
+
+
+## 事件参数
+
+```vue
+<button @click="$emit('increaseBy', 1)">
+    Increase by 1
+</button>
+```
+
+**`然后我们在父组件中监听事件，我们可以先简单写一个内联的箭头函数作为监听器，此函数会接收到事件附带的参数：`**
+
+```vue
+<MyButton @increase-by="(n) => count += n"></MyButton>
+```
+
+**`或者，也可以用一个组件方法来作为事件处理函数：`**
+
+```html
+<MyButton @increase-by="increaseCount"></MyButton>
+```
+
+**`该方法也会接收到事件所传递的参数：`**
+
+```javascript
+function increaseCount(n) {
+    count.value += n;
+}
+```
+
+
+
+
+
+## 声明触发的事件
+
+**`组件可以显式地通过 defineEmits() 宏来声明它要触发地事件：`**
+
+```vue
+<script setup>
+defineEmits(["inFocus", "submit"]);
+</script>
+```
+
+
+
+**`我们在 <template> 中使用的 $emit 方法不能在组件的 <script setup> 部分中使用，但 defineEmits() 会返回一个相同作用的函数供我们使用：`**
+
+```vue
+<script setup>
+const emit = defineEmits(["inFocus", "submit"]);
+    
+function buttonClick() {
+    emit("submit");
+}
+</script>
+```
+
+**`defineEmits() 宏不能在子函数中使用。如上所示，它必须直接放置在 <script setup> 的顶级作用域下。`**
+
+**`如果你显式地使用了 setup 函数而不是 <script setup> ，则事件需要通过 emits 选项来定义，emit 函数也被暴露在 setup() 的上下文对象上：`**
+
+```javascript
+export default {
+    emits: ["inFocus", "submit"],
+    setup(props, ctx) {
+        ctx.emit("submit");
+    }
+}
+```
+
+**`与 setup() 上下文对象中的其他属性一样，emit 可以安全地被解构：`**
+
+```javascript
+export default {
+    emits: ["inFocus", "submit"],
+    setup(props, { emit }) {
+        emit("submit");
+    }
+}
+```
+
+
+
