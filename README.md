@@ -1789,3 +1789,561 @@ export default {
 
 
 
+
+
+## 事件校验
+
+**`和对 props 添加类型校验的方式类似，所有触发的事件也可以使用对象形式来描述。要为事件添加校验，那么事件可以被赋值为一个函数，接受的参数就是抛出事件时传入 emit 的内容，返回一个布尔值来表明事件是否合法。`**
+
+```vue
+<script setup>
+const emit = defineEmits({
+    click: null,
+    
+    submit: ({ email, password }) => {
+        if (email && password) {
+            return true;
+        } else {
+            console.warn("Invalid submit event payload!");
+         	return false;
+        }
+    }
+});
+    
+function submitForm(email, password) {
+    emit("submit", { email, password });
+}
+</script>
+```
+
+
+
+
+
+# 十五、组件 v-model
+
+
+
+## 基本用法
+
+**`v-model 可以在组件上使用以实现双向绑定。从 Vue 3.4 开始，推荐的实现方式是使用 defineModel() 宏：`**
+
+```vue
+<!-- Child.vue -->
+<template>
+	<div>Parent bound v-model is: {{ model }}</div>
+	<button @click="update">Increment</button>
+</template>
+
+
+<script setup>
+const model = defineModel();
+
+function update() {
+    model.value++;
+}
+</script>
+```
+
+
+
+**`父组件可以用 v-model 绑定一个值：`**
+
+```vue
+<Child v-model="countModel"></Child>
+```
+
+**`defineModel() 返回的值是一个 ref。它可以像其他 ref 一样被访问以及修改，不过它能起到在父组件和当前变量之间的双向绑定的作用：`**
+
+* **`它的 .value 和父组件的 v-model 的值同步。`** 
+* **`当它被子组件变更了，会触发父组件绑定的值一起更新。`** 
+
+**`这意味着你也可以用 v-model 把这个 ref 绑定到一个原生 input 元素上，在提供相同的 v-model 用法的同时轻松包装原生 input 元素：`** 
+
+```vue
+<template>
+	<input v-model="model" />
+</template>
+
+<script setup>
+const model = defineModel();
+</script>
+```
+
+
+
+
+
+## 底层机制
+
+**`defineModel 是一个便利宏。编译器将其展开为以下内容：`**
+
+* 一个名为 modelValue 的 prop，本地 ref 的值与其同步
+* 一个名为 update:modelValue 的事件，当本地 ref 的值发生变更时触发。
+
+
+
+**`在 3.4 版本之前，你一般会按照如下的方式实现上述相同的子组件：`**
+
+```vue
+<!-- Child.vue -->
+<template>
+	<input :value="props.modelValue"  @input="emit('update:modelValue', $event.target.value)"  />
+</template>
+
+<script setup>
+const props = defineProps(["modelValue"]);
+const emit = defineEmits(["update:modelValue"]);
+</script>
+```
+
+**`然后，父组件中的 v-model="foo" 将被编译为：`**
+
+```vue
+<!-- Parent.vue -->
+<Child :modelValue="foo" @update:modelValue="$event => (foo = $event)"></Child>
+```
+
+**`如你所见，这显得冗长很多。然而，这样写有助于理解其底层机制。因为 defineModel 声明一个 prop，你可以通过给 defineModel 传递选项，来声明底层 prop 的选项：`**
+
+```javascript
+// 使 v-model 必填
+const model = defineModel({ required: true });
+
+
+// 提供一个默认值
+const model = defineModel({ default: 0 });
+```
+
+
+
+
+
+## `v-model` 的参数
+
+**`组件上的 v-model 也可以接受一个参数：`**
+
+```vue
+<MyComponent v-model:title="bookTitle"></MyComponent>
+```
+
+**`在子组件中，我们可以通过将字符串作为第一个参数传递给 defineModel() 来支持相应的参数：`**
+
+```vue
+<!-- MyComponent.vue -->
+<template>
+	<input type="text" v-model="title" />
+</template>
+
+<script setup>
+const title = defineModel("title");
+</script>
+```
+
+**`如果需要额外的 prop 选项，应该在 model 名称之后传递：`**
+
+```javascript
+const title = defineModel("title", { required: true });
+```
+
+**`3.4 之前的用法`**
+
+```vue
+<!-- MyComponent.vue -->
+<template>
+	<input type="text" :value="title" @input="$emit('update:title', $event.target.value)" />
+</template>
+
+<script setup>
+defineProps({
+    title: {
+        required: true
+    }
+});
+    
+defineEmits(["update:title"]);
+</script>
+```
+
+
+
+
+
+## 多个 `v-model` 绑定
+
+```vue
+<UserName v-model:first-name="first" v-model:last-name="last"></UserName>
+```
+
+```vue
+<template>
+	<input type="text" v-model="firstName" />
+	<input type="text" v-model="lastName" />
+</template>
+
+<script setup>
+const firstName = defineModel("firstName");
+const lastName = defineModel("lastName");
+</script>
+```
+
+
+
+**`3.4 之前的用法`**
+
+```vue
+<template>
+	<input type="text" :value="firstName" @input="$emit('update:firstName', $event.target.value)" />
+	<input type="text" :value="lastName" @input="$emit('update:lastName', $event.target.value)" />
+</template>
+
+<script setup>
+defineProps({
+    firstName: String,
+    lastName: String
+});
+    
+defineEmits(['update:firstName', 'update:lastName']);
+</script>
+```
+
+
+
+## 处理 `v-model` 修饰符
+
+```vue
+<MyComponent v-model.capitalize="myText"></MyComponent>
+```
+
+```vue
+<template>
+	<input type="text" v-model="model" />
+</template>
+
+<script setup>
+const [model, modifiers] = defineModel();
+
+console.log(modifiers); // { capitalize: true }
+</script>
+```
+
+
+
+```vue
+<template>
+	<input type="text" v-model="model" />
+</template>
+
+<script setup>
+const [model, modifiers] = defineModel({
+    set(value) {
+        if (modifiers.capitalize) {
+            return value.charAt(0).tpUpperCase() + value.slice(1);
+        }
+        
+        return value;
+    }
+})
+</script>
+```
+
+
+
+**`3.4 之前的用法`**
+
+```vue
+<template>
+	<input type="text" :value="props.modelValue" @input="emitValue" />
+</template>
+
+<script setup>
+const props = defineProps({
+    modelValue: String,
+    modelModifiers: { default: () => ({}) }
+})
+
+const emit = defineEmits(['update:modelValue']);
+
+function emitValue(e) {
+    let value = e.target.value;
+    if (props.modelModifiers.capitalize) {
+        value = value.charAt(0).toUpperCase() + value.slice(1);
+    }
+    
+    emit('update:modelValue', value);
+}
+</script>
+```
+
+
+
+
+
+## 带参数的 `v-model` 修饰符
+
+```vue
+<UserName v-model:first-name.capitalize="first" v-model:last-name.uppercase="last" ></UserName>
+```
+
+
+
+```vue
+<script setup>
+const [firstName, firstNameModifiers] = defineModel('firstName');
+const [lastName, lastNameModifiers] = defineModel('lastName');
+    
+console.log(firstNameModifiers); // { capitalize: true }
+console.log(lastNameModifiers); // { uppercase: true }
+</script>
+```
+
+
+
+**`3.4 之前的用法`**
+
+```vue
+<script setup>
+const props = defineProps({
+    firstName: String,
+    lastName: String,
+    firstNameModifiers: { default: () => ({}) },
+    lastNameModifiers: { default: () => ({}) }
+});
+    
+defineEmits(['update:firstName', 'update:lastName'])
+ 
+console.log(props.firstNameModifiers); // { capitalize: true }
+console.log(props.lastNameModifiers); // { uppercase: true }
+</script>
+```
+
+
+
+
+
+# 十六、透传 Attributes
+
+
+
+## Attribute 继承
+
+```vue
+<!-- <MyButton> 的模板 -->
+<button>Click Me</button>
+```
+
+**`一个父组件使用了这个组件，并且传入了 class：`**
+
+```vue
+<MyButton class="large"></MyButton>
+```
+
+**`最后渲染出的 DOM 结果是：`**
+
+```vue
+<button class="large">Click Me</button>
+```
+
+**`这里，<MyButton> 并没有将 class 声明为一个它所接受的 prop，所以 class 被视作透传 attribute，自动透传到了 <MyButton> 的根元素上。`**
+
+
+
+## 对 `class` 和 `style` 的合并
+
+**`如果一个子组件的根元素已经有了 class 或 style attribute，它会和从父组件上继承的值合并。如果我们将之前的 <MyButton> 组件的模板改成这样：`**
+
+```vue
+<!-- <MyButton> 的模板 -->
+<button class="btn">Click Me</button>
+```
+
+**`则最后渲染出的 DOM 结果会变成：`**
+
+```vue
+<button class="btn large">Click Me</button>
+```
+
+
+
+## `v-on` 监听器继承
+
+**`同样的规则也适用于 v-on 事件监听器：`**
+
+```vue
+<MyButton @click="onClick"></MyButton>
+```
+
+
+
+
+
+## 深层组件继承
+
+```vue
+<!-- <MyButton /> 的模板，只是渲染另一个组件 -->
+<BaseButton />
+```
+
+
+
+
+
+
+
+## 禁用 Attributes 继承
+
+**`如果你不想要一个组件自动地继承 attribute，你可以在组件选项中设置 inheritAttrs: false。从 3.3 开始你也可以直接在 <script setup> 中使用 defineOptions：`**
+
+```vue
+<script setup>
+defineOptions({
+    inheritAttrs: false
+})
+</script>
+```
+
+
+
+
+
+## 多根节点的 Attributes 继承
+
+```vue
+<CustomLayout id="custom-layout" @click="changeValue" />
+```
+
+**`如果 <CustomLayout> 有下面这样的多根节点模板，由于 Vue 不知道要将 attribute 透传到哪里，所以会抛出一个警告。`**
+
+```vue
+<header>...</header>
+<main>...</main>
+<footer>...</footer>
+```
+
+**`如果 $attrs 被显式绑定，则不会有警告：`**
+
+```vue
+<header>...</header>
+<main v-bind="$attrs">...</main>
+<footer>...</footer>
+```
+
+
+
+
+
+## 在 JavaScript 中访问透传 Attributes
+
+**`如果需要，你可以在 <script setup> 中使用 useAttrs() API 来访问一个组件的所有透传 attribute：`**
+
+```vue
+<script setup>
+import { useAttrs } from 'vue';
+
+const attrs = useAttrs();
+</script>
+```
+
+**`如果没有使用 <script setup>，attrs 会作为 setup() 上下文对象的一个属性暴露：`**
+
+```javascript
+export default {
+	setup(props, ctx) {
+        // 透传 attribute 被暴露为 ctx.attrs
+        console.log(ctx.attrs)
+    }
+}
+```
+
+**`需要注意的是，虽然这里的 attrs 对象总是反映为最新的透传 attribute，但它并不是响应式的（考虑到性能因素）。你不能通过侦听器去监听它的变化。如果你需要响应性，可以使用 prop。或者你也可以使用 onUpdated() 使得在每次更新时结合最新的 attrs 执行副作用。`**
+
+
+
+
+
+# 十七、插槽 Slots
+
+
+
+## 插槽内容与出口
+
+**`举例来说，这里有一个 <FancyButton> 组件，可以像这样使用：`**
+
+```vue
+<FancyButton>
+    Click me! <!-- 插槽内容 -->
+</FancyButton>
+```
+
+**`而 <FancyButton> 的模板是这样的：`**
+
+```vue
+<button class="fancy-btn">
+    <slot></slot> <!-- 插槽出口 -->
+</button>
+```
+
+**`<slot> 元素是一个插槽出口，标示了父元素提供的插槽内容将在哪里被渲染。`**
+
+**`最终渲染出的 DOM 是这样：`**
+
+```vue
+<button class="fancy-btn">Click me!</button>
+```
+
+
+
+
+
+## 默认内容
+
+**`在外部没有提供任何内容的情况下，可以为插槽指定默认内容。比如有这样一个 <SubmitButton> 组件：`**
+
+```vue
+<button type="submit">
+    <slot></slot>
+</button>
+```
+
+
+
+**`如果我们想要在父组件没有提供任何插槽内容时在 <button> 内渲染 "Submit"，只需要将 "Submit" 写在 <slot> 标签之间来作为默认内容：`**
+
+```vue
+<button type="submit">
+    <slot>
+        Submit <!-- 默认内容 -->
+    </slot>
+</button>
+```
+
+**`现在，当我们在父组件中使用 <SubmitButton> 且没有提供任何插槽内容时：`**
+
+```vue
+<SubmitButton />
+```
+
+**`"Submit" 将会被作为默认内容渲染：`**
+
+```vue
+<button type="submit">Submit!</button>
+```
+
+**`但如果我们提供了插槽内容：`**
+
+```vue
+<SubmitButton>Save</SubmitButton>
+```
+
+**`那么被显式提供的内容会取代默认内容：`**
+
+```vue
+<button type="submit">Save</button>
+```
+
+
+
+
+
+## 具名插槽
+
