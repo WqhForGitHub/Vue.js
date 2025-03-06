@@ -2347,3 +2347,258 @@ export default {
 
 ## 具名插槽
 
+**`有时在一个组件中包含多个插槽出口是很有用的。举例来说，在一个 <BaseLayout> 组件中，有如下模板：`**
+
+```vue
+<div class="container">
+    <header>
+        <!-- 标题内容放这里 -->
+    </header>
+    
+    <main>
+        <!-- 主要内容放这里 -->
+    </main>
+    
+    <footer>
+        <!-- 底部内容放这里 -->
+    </footer>
+</div>
+```
+
+
+
+**`对于这种场景，<slot> 元素可以有一个特殊的 attribute name，用来给各个插槽分配唯一的 ID，以确定每一处要渲染的内容：`**
+
+```vue
+<div class="container">
+    <header>
+        <slot name="header"></slot>
+    </header>
+    
+    <main>
+        <slot></slot>
+    </main>
+    
+    <footer>
+        <slot name="footer"></slot>
+    </footer>
+</div>
+```
+
+**`这类带 name 的插槽被称为具名插槽。没有提供 name 的 <slot> 出口会隐式地命名为 default。`**
+
+**`在父组件中使用 <BaseLayout> 时，我们需要一种方式将多个插槽内容传入到各自目标插槽的出口。此时就需要用到具名插槽了：`**
+
+**`要为具名插槽传入内容，我们需要使用一个含 v-slot 指令的 <template> 元素，并将目标插槽的名字传给该指令：`**
+
+```vue
+<BaseLayout>
+    <template v-slot:header>
+		<!-- header 插槽的内容放这里 -->
+    </template>
+</BaseLayout>
+```
+
+**`v-slot 有对应的简写 #，因此 <template v-slot:header> 可以简写为 <template #header>。其意思就是将这部分模板片段传入子组件的 header 插槽中。`**
+
+**`下面我们给出完整的、向 <BaseLayout> 传递插槽内容的代码，指令均使用的是缩写形式：`**
+
+```vue
+<BaseLayout>
+    <template #header>
+		<h1>Here might be a page title</h1>
+    </template>
+    
+    <template #default>
+		<p>A paragraph for the main content.</p>
+		<p>And another one.</p>
+    </template>
+    
+    <template #footer>
+		<p>Here's some contact info</p>
+    </template>
+</BaseLayout>
+```
+
+**`当一个组件同时接收默认插槽和具名插槽时，所有位于顶级的非 <template> 节点都被隐式地视为默认插槽的内容。所以上面也可以写成:`**
+
+```vue
+<BaseLayout>
+    <template #header>
+		<h1>Here might be a page title</h1>
+    </template>
+    
+    <!-- 隐式的默认插槽 -->
+    <p>A paragraph for the main content.</p>
+    <p>And another one.</p>
+    
+    <template #footer>
+		<p>Here's some contact info</p>
+    </template>
+</BaseLayout>
+```
+
+**`现在 <template> 元素中的所有内容都将被传递到相应的插槽。最终渲染出的 HTML 如下：`**
+
+```vue
+<div class="container">
+    <header>
+        <h1>Here might be a page title</h1>
+    </header>
+    
+    <main>
+        <p>A paragraph for the main content.</p>
+        <p>And another one.</p>
+    </main>
+    
+    <footer>
+        <p>Here's some contact info</p>
+    </footer>
+</div>
+```
+
+
+
+
+
+## 条件插槽
+
+**`有时你需要根据内容是否被传入了插槽来渲染某些内容。你可以结合使用 $slots 属性与 v-if 来实现。在下面的示例中，我们定义了一个卡片组件，它拥有三个条件插槽：header、footer 和 default。当 header、footer 或 default 的内容存在时，我们希望包装它以提供额外的样式：`**
+
+```vue
+<template>
+	<div class="card">
+        <div v-if="$slots.header" class="card-header">
+            <slot name="header"></slot>
+    	</div>
+            
+        <div v-if="$slots.default" class="card-content">
+            <slot></slot>
+    	</div>
+        
+        <div v-if="$slots.footer" class="card-footer">
+            <slot name="footer"></slot>
+    	</div>
+    </div>
+</template>
+```
+
+
+
+
+
+## 动态插槽名
+
+```vue
+<base-layout>
+    <template v-slot:[dynamicsSlotName]>
+    </template>
+    
+    <!-- 缩写为 -->
+    <template #[dynamicSlotName]>
+    </template>
+</base-layout>
+```
+
+
+
+
+
+
+
+## 作用域插槽
+
+```vue
+<!-- <MyComponent> 的模板 -->
+<div>
+    <slot :text="greetingMessage" :count="1"></slot>
+</div>
+```
+
+
+
+```vue
+<MyComponent v-slot="slotProps">
+    {{ slotProps.text }} {{ slotProps.count }}
+</MyComponent>
+```
+
+
+
+**`v-slot="slotProps" 可以类比这里的函数签名，和函数的参数类似，我们也可以在 v-slot 中使用解构：`**
+
+```vue
+<MyComponent v-slot="{ text, count }">
+    {{ text }} {{ count }}
+</MyComponent>
+```
+
+
+
+
+
+## 具名作用域插槽
+
+**`具名作用域插槽的工作方式也是类似的，插槽 props 可以作为 v-slot 指令的值被访问到： v-slot:name="slotProps"。当使用缩写时是这样：`**
+
+```vue
+<MyComponent>
+    <template #header="headerProps">
+		{{ headerProps }}
+    </template>
+    
+    <template #default="defaultProps">
+		{{ defaultProps }}
+    </template>
+    
+    <template #footer="footerProps">
+		{{ footerProps }}
+    </template>
+</MyComponent>
+```
+
+**`向具名插槽中传入 props：`**
+
+```vue
+<slot name="header" message="hello"></slot>
+```
+
+**`注意插槽上的 name 是一个 Vue 特别留意的 attribute，不会作为 props 传递给插槽。因此最终 headerProps 的结果是 { message: "hello" }。`**
+
+
+
+**`如果你同时使用了具名插槽与默认插槽，则需要为默认插槽使用显式的 <template> 标签。尝试直接为组件添加 v-slot 指令将导致编译错误。这是为了避免因默认插槽的 props 的作用域而困惑。举例：`**
+
+```vue
+<!-- <MyComponent> template -->
+<div>
+    <slot :message="hello"></slot>
+    <slot name="footer"></slot>
+</div>
+```
+
+```vue
+<!-- 该模板无法编译 -->
+<MyComponent v-slot="{ message }">
+    <p>{{ message }}</p>
+    <template #footer>
+		<!-- message 属于默认插槽，此处不可用 -->
+		<p>{{ message }}</p>
+    </template>
+</MyComponent>
+```
+
+**`为默认插槽使用显式的 <template> 标签有助于更清晰地指出 message 属性在其他插槽中不可用：`**
+
+```vue
+<MyComponent>
+    <template #default="{ message }">
+		<p>{{ message }}</p>
+    </template>
+    
+    <template #footer>
+		<p>Here's some contact info</p>
+    </template>
+</MyComponent>
+```
+
