@@ -2602,3 +2602,390 @@ export default {
 </MyComponent>
 ```
 
+
+
+
+
+
+
+# 十八、依赖注入
+
+
+
+
+
+## Provide（提供）
+
+**`要为组件后台提供数据，需要使用到 provide() 函数：`**
+
+```vue
+<script setup>
+import { provide } from "vue";
+    
+provide("message", "hello!");
+</script>
+```
+
+**`如果不使用 <script setup>，请确保 provide() 是在 setup() 同步调用的：`**
+
+```javascript
+import { provide } from "vue";
+
+export default {
+    setup() {
+        provide("message", "hello!");
+    }
+}
+```
+
+
+
+**`provide() 函数接收两个参数。第一个参数被称为注入名，可以是一个字符串或是一个 Symbol。后代组件会用注入名来查找期望注入的值。一个组件可以多次调用 provide()，使用不同的注入名，注入不同的依赖值。第二个参数是提供的值，值可以是任意类型，包括响应式的状态，比如一个 ref：`**
+
+```javascript
+import { ref, provide } from "vue";
+
+const count = ref(0);
+provide("key", count);
+```
+
+**`提供的响应式状态使后代组件可以由此和提供者建立响应式的联系。`**
+
+
+
+
+
+## 应用层 Provide
+
+**`除了在一个组件中提供依赖，我们还可以在整个应用层面提供依赖：`**
+
+```javascript
+import { createApp } from "vue";
+
+const app = createApp({});
+
+app.provide("message", "hello!");
+```
+
+**`在应用级别提供的数据在该应用内的所有组件中都可以注入。这在你编写的插件时会特别有用，因为插件一般都不会使用组件形式来提供值。`**
+
+
+
+
+
+
+
+## Inject（注入）
+
+**`要注入上层组件提供的数据，需使用 inject() 函数：`**
+
+```vue
+<script setup>
+import { inject } from "vue";
+    
+const message = inject("message");
+</script>
+```
+
+**`如果提供的值是一个 ref，注入进来的会是该 ref 对象，而不会自动解包为其内部的值。这使得注入方组件能够通过 ref 对象保持了和供给方的响应性链接。同样的，如果没有使用 <script setup>，inject() 需要在 setup() 内同步调用：`**
+
+```javascript
+import { inject } from "vue";
+
+export default {
+    setup() {
+        const message = inject("message");
+        
+        return { message };
+    }
+}
+```
+
+
+
+
+
+## 和响应式数据配合使用
+
+**`当提供/注入响应式的数据时，建议尽可能将任何对响应式状态的变更都保持在供给方组件中。这样可以确保所提供状态的声明和变更操作都内聚在同一个组件内，使其更容易维护。有的时候，我们可能需要在注入方组件中更改数据。在这种情况下，我们推荐在供给方组件内声明并提供一个更改数据的方法函数：`**
+
+```vue
+<!-- 在供给方组件内 -->
+
+<script setup>
+import { provide, ref } from "vue";
+
+const location = ref("North Pole");
+
+function updateLocation() {
+    location.value = "South Pole";
+}
+    
+provide("location", {
+    location,
+    updateLocation
+})
+</script>
+```
+
+
+
+```vue
+<!-- 在注入方组件 -->
+
+<template>
+	<button @click="updateLocation">{{ location }}</button>
+</template>
+
+
+<script setup>
+import { inject } from "vue";
+    
+const { location, updateLocation } = inject("location");
+</script>
+```
+
+
+
+**`最后，如果你想确保提供的数据不能被注入方的组件更改，你可以使用 readonly() 来包装提供的值。`**
+
+```vue
+<script setup>
+import { ref, provide, readonly } from "vue";
+
+const count = ref(0);
+    
+provide("read-only-count", readonly(count));
+</script>
+```
+
+
+
+
+
+## 使用 Symbol 作注入名
+
+```javascript
+export const myInjectionKey = Symbol();
+```
+
+```javascript
+// 在供给方组件中
+
+import { provide } from "vue";
+import { myInjectionKey } from "./key.js";
+
+provide(myInjectionKey, {})
+```
+
+
+
+```javascript
+// 注入方组件
+
+import { inject } from "vue";
+import { myInjectionKey } from "./keys.js";
+
+const injected = inject(myInjectionKey);
+```
+
+
+
+
+
+
+
+# 十九、异步组件
+
+
+
+## 基本用法
+
+**`在大型项目中，我们可能需要拆分应用为更小的块，并仅在需要时再从服务器加载相关组件。Vue 提供了 defineAsyncComponent 方法来实现此功能：`**
+
+```javascript
+import { defineAsyncComponent } from "vue";
+
+const AsyncComp = defineAsyncComponent(() => {
+    return new Promise((resolve, reject) => {
+        resolve()
+    })
+})
+```
+
+
+
+
+
+# 自定义指令
+
+```vue
+<template>
+	<p v-highlight>This sentence is important!</p>
+</template>
+
+<script setup>
+    const vHighlight = {
+        mounted: (el) => {
+            el.classList.add("is-highlight");
+        }
+    }
+</script>
+```
+
+**`在 <script setup> 中，任何以 v 开头的驼峰式命名的变量都可以当作自定义指令使用。在上述例子中，vHighlight 可以在模板中以 v-highlight 的形式使用。`**
+
+**`在不使用 <script setup> 的情况下，自定义指令需要通过 directives 选项注册：`**
+
+```javascript
+export default {
+    setup() {},
+    directives: {
+        // 在模板中启用 v-hightlight
+        highlight: {}
+    }
+}
+```
+
+**`将一个自定义指令全局注册到应用层级也是一种常见的做法：`**
+
+```javascript
+const app = createApp({});
+
+// 使 v-highlight 在所有组件中都可用
+app.directive("highlight", {});
+```
+
+
+
+
+
+## 自定义指令的使用时机
+
+**`只有当所需功能只能通过直接的 DOM 操作来实现时，才应该使用自定义指令。一个常见例子是使元素获取焦点的 v-focus 指令。`**
+
+```vue
+<template>
+	<input v-focus />
+</template>
+
+<script setup>
+const vFocus = {
+    mounted: (el) => el.focus();
+}
+</script>
+```
+
+
+
+
+
+## 指令钩子
+
+**`一个指令的定义对象可以提供几种钩子函数（都是可选的）：`**
+
+```javascript
+const myDirective = {
+    // 在绑定元素的 attribute 前
+  	// 或事件监听器应用前调用
+    created(el, binding, vnode) {},
+    // 在元素被插入到 DOM 前调用
+    beforeMount(el, binding, vnode) 
+    // 在绑定元素的父组件
+  	// 及他自己的所有子节点都挂载完成后调用
+    mounted(el, binding, vnode) {},
+  	// 绑定元素的父组件更新前调用
+    beforeUpdate(el, binding, vnode, preVnode) {},
+    // 在绑定元素的父组件
+  	// 及他自己的所有子节点都更新后调用
+    updated(el, binding, vnode, preVnode) {},
+    // 绑定元素的父组件卸载前调用
+    beforeUnmount(el, binding, vnode) {},
+    // 绑定元素的父组件卸载后调用
+    unmounted(el, binding, vnode) {}
+}
+```
+
+
+
+## 钩子函数
+
+**`指令的钩子会传递以下几种参数：`**
+
+* el：指令绑定的元素。这可以用于直接操作 DOM。
+* binding：一个对象，包括以下属性。
+  * value：传递给指令的值。
+  * oldValue：之前的值。
+  * arg：传递给指令的参数
+  * modifiers：一个包含修饰符的对象。
+  * instance：使用该指令的组件实例。
+  * dir：指令的定义对象。
+* vnode：代表绑定元素的底层 VNode
+* prevVnode：代表之前的渲染中指令所绑定元素的 VNode。仅在 beforeUpdate 和 updated 钩子中可用。
+
+举例来说，像下面这样使用指令：
+
+```vue
+<div v-example:foo.bar="baz"></div>
+```
+
+**`binding 参数会是一个这样的对象：`**
+
+```javascript
+{
+	arg: "foo",
+    modifiers: { bar: true },
+    value: "",
+    oldValue: ""
+}
+```
+
+**`和内置指令类似，自定义指令的参数也可以是动态的。举例来说：`**
+
+```vue
+<div v-example:[arg]="value"></div>
+```
+
+**`这里指令的参数会基于组件的 arg 数据属性响应式地更新。`**
+
+
+
+
+
+## 简化形式
+
+```vue
+<div v-color="color"></div>
+```
+
+```javascript
+app.directive("color", (el, binding) => {
+    el.style.color = binding.value;
+})
+```
+
+
+
+
+
+## 对象字面量
+
+```vue
+<div v-demo="{ color: 'white', text: 'hello!' }"></div>
+```
+
+```javascript
+app.directive("demo", (el, binding) => {
+    console.log(binding.value.color); // "white"
+    console.log(binding.value.text); // "hello!"
+})
+```
+
+
+
+
+
+## 组件上使用
+
+**`不推荐在组件上使用自定义指令。当组件具有多个根节点时可能会出现预期外的行为。`**
+
