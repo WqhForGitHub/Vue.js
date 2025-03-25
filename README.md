@@ -426,24 +426,225 @@ methods: {
 
 
 
-```html
-<a v-on:click.stop="doThis"></a>
+```vue
+<template>
+	<div>
+        <!-- 阻止事件冒泡 -->
+        <button @click.stop="handleClick">Click me</button>
+        
+        <!-- 阻止默认行为 -->
+        <a href="https://www.example.com" @click.prevent="handleLinkClick">
+            Go to example.com
+    	</a>
+        
+        <!-- 使用 capture 模式 -->
+        <div @click.capture="handleCapture">
+            Click here
+    	</div>
+        
+        <!-- 只当事件是从元素本身触发时才触发回调 -->
+        <div @click.self="handleSelf">
+            Click here
+    	</div>
+        
+        <!-- 事件只触发一次 -->
+        <button @click.once="handleOnce">Click me once</button>
+        
+        <!-- 以 passive 的方式监听事件 -->
+        <div @scroll.passive="handleScroll">
+            Scroll me
+    	</div>
+    </div>
+</template>
 
-
-<form v-on:submit.prevent="onSubmit"></form>
-
-
-<a v-on:click.stop.prevent="doThat"></a>
-
-
-<form v-on:submit.prevent></form>
-
-
-<div v-on:click.capture="doThis"></div>
-
-
-<div v-on:click.self="doThat"></div>
+<script>
+export default {
+  methods: {
+    handleClick(event) {
+      console.log('Button clicked');
+    },
+    handleLinkClick(event) {
+      console.log('Link clicked, but default behavior prevented');
+    },
+    handleCapture(event) {
+      console.log('Capture mode clicked');
+    },
+    handleSelf(event) {
+      console.log('Self clicked');
+    },
+    handleOnce(event) {
+      console.log('Clicked only once');
+    },
+    handleScroll(event) {
+      console.log('Scrolling');
+    }
+  }
+};
+</script>
 ```
+
+<br>
+
+### 1. .stop
+
+**`阻止事件冒泡，防止事件传播到父元素。`**
+
+```vue
+<template>
+  <div @click="handleParentClick">
+    <button @click.stop="handleChildClick">Click me</button>
+  </div>
+</template>
+
+<script>
+export default {
+  methods: {
+    handleParentClick() {
+      console.log('Parent clicked');
+    },
+    handleChildClick() {
+      console.log('Child clicked');
+    }
+  }
+};
+</script>
+```
+
+**`在这个例子中，点击按钮只会触发 handleChildClick，而不会触发 handleParentClick。`**
+
+
+
+### 2. .prevent
+
+**`阻止事件的默认行为，例如阻止链接跳转、阻止表单提交等。`**
+
+```vue
+<template>
+  <form @submit.prevent="handleSubmit">
+    <button type="submit">Submit</button>
+  </form>
+</template>
+
+<script>
+export default {
+  methods: {
+    handleSubmit() {
+      console.log('Form submitted, but page not reloaded');
+    }
+  }
+};
+</script>
+```
+
+**`在这个例子中，点击提交按钮会触发 handleSubmit，但页面不会重新加载。`**
+
+
+
+### 3. .capture
+
+**`使用 capture 模式添加事件监听器。在 capture 模式下，事件会先被父元素捕获，然后再传播到子元素。`**
+
+```vue
+<template>
+  <div @click.capture="handleParentClick">
+    <button @click="handleChildClick">Click me</button>
+  </div>
+</template>
+
+<script>
+export default {
+  methods: {
+    handleParentClick() {
+      console.log('Parent clicked (capture mode)');
+    },
+    handleChildClick() {
+      console.log('Child clicked');
+    }
+  }
+};
+</script>
+```
+
+**`在这个例子中，点击按钮会先触发 handleParentClick（capture mode），然后再触发 handleChildClick。`**
+
+
+
+### 4. .self
+
+**`只当事件是从侦听器绑定的元素本身触发时才触发回调`**
+
+```vue
+<template>
+  <div @click.self="handleSelfClick">
+    Click here
+    <div>
+      Inner element
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  methods: {
+    handleSelfClick() {
+      console.log('Self clicked');
+    }
+  }
+};
+</script>
+```
+
+**`在这个例子中，只有点击 Click here 这个 div 元素本身才会触发 handleSelfClick，点击 Inner element 不会触发。`**
+
+
+
+### 5. .once
+
+**`事件只触发一次`**
+
+```vue
+<template>
+  <button @click.once="handleOnceClick">Click me once</button>
+</template>
+
+<script>
+export default {
+  methods: {
+    handleOnceClick() {
+      console.log('Clicked only once');
+    }
+  }
+};
+</script>
+```
+
+**`在这个例子中，点击按钮只会触发一次 handleOnceClick，后续点击不会再触发。`**
+
+
+
+### 6. .passive
+
+**`以 passive 的方式监听事件，尤其用于提升移动端的滚动性能`**
+
+```vue
+<template>
+  <div @scroll.passive="handleScroll">
+    Scrollable content
+  </div>
+</template>
+
+<script>
+export default {
+  methods: {
+    handleScroll() {
+      console.log('Scrolling');
+    }
+  }
+};
+</script>
+```
+
+**`在这个例子中，以 passive 的方式监听滚动事件，可以提升移动端的滚动性能。`**
 
 
 
@@ -453,17 +654,119 @@ methods: {
 
 **`在监听键盘事件时，我们经常需要检查详细的按键。Vue 允许为 v-on 在监听键盘事件时添加按键修饰符：`**
 
-```html
-<input v-on:keyup.enter="submit" >
+```vue
+<template>
+  <div>
+    <!-- 当按下 Enter 键时触发 -->
+    <input type="text" @keyup.enter="handleEnter" placeholder="Press Enter" />
+
+    <!-- 当按下 Tab 键时触发 -->
+    <input type="text" @keyup.tab="handleTab" placeholder="Press Tab" />
+
+    <!-- 当按下 Delete 或 Backspace 键时触发 -->
+    <input type="text" @keyup.delete="handleDelete" placeholder="Press Delete or Backspace" />
+
+    <!-- 当按下 Esc 键时触发 -->
+    <input type="text" @keyup.esc="handleEsc" placeholder="Press Esc" />
+
+    <!-- 当按下 Space 键时触发 -->
+    <input type="text" @keyup.space="handleSpace" placeholder="Press Space" />
+
+    <!-- 当按下 Up 键时触发 -->
+    <input type="text" @keyup.up="handleUp" placeholder="Press Up" />
+
+    <!-- 当按下 Down 键时触发 -->
+    <input type="text" @keyup.down="handleDown" placeholder="Press Down" />
+
+    <!-- 当按下 Left 键时触发 -->
+    <input type="text" @keyup.left="handleLeft" placeholder="Press Left" />
+
+    <!-- 当按下 Right 键时触发 -->
+    <input type="text" @keyup.right="handleRight" placeholder="Press Right" />
+  </div>
+</template>
+
+<script>
+export default {
+  methods: {
+    handleEnter() {
+      console.log('Enter key pressed');
+    },
+    handleTab() {
+      console.log('Tab key pressed');
+    },
+    handleDelete() {
+      console.log('Delete or Backspace key pressed');
+    },
+    handleEsc() {
+      console.log('Esc key pressed');
+    },
+    handleSpace() {
+      console.log('Space key pressed');
+    },
+    handleUp() {
+      console.log('Up key pressed');
+    },
+    handleDown() {
+      console.log('Down key pressed');
+    },
+    handleLeft() {
+      console.log('Left key pressed');
+    },
+    handleRight() {
+      console.log('Right key pressed');
+    }
+  }
+};
+</script>
 ```
 
 
 
 <br>
 
+## 6. .exact 修饰符
+
+**`.exact 修饰符用于精确控制触发事件处理函数的条件。它确保只有在没有其他系统修饰键（如 Shift、Ctrl、Alt、Meta）被按下的情况下，事件处理函数才会被触发。换句话说，它要求事件发生时，除了目标按键之外，不能有任何其他的修饰键被按下。`** 
+
+```vue
+<template>
+  <div>
+    <button @click="method1">Click me</button>
+    <button @click.shift="method2">Shift + Click me</button>
+    <button @click.alt="method3">Alt + Click me</button>
+    <button @click.exact="method4">Exact Click me</button>
+  </div>
+</template>
+
+<script>
+export default {
+  methods: {
+    method1() {
+      console.log('method1: Clicked');
+    },
+    method2() {
+      console.log('method2: Shift + Clicked');
+    },
+    method3() {
+      console.log('method3: Alt + Clicked');
+    },
+    method4() {
+      console.log('method4: Exact Clicked');
+    }
+  }
+};
+</script>
+```
+
+- **`method1 会在任何点击事件发生时被触发。`** 
+- **`method2 只会在按下 Shift 键的同时点击按钮时被触发。`** 
+- **`method3 只会在按下 Alt 键的同时点击按钮时被触发。`** 
+- **`method4 只会在没有按下任何其他修饰键的情况下点击按钮时被触发。`** 
+
 <br>
 
-
+<br>
 
 # 表单输入绑定
 
@@ -1540,7 +1843,7 @@ vm.conflicting(); // "from self"
 
 # 自定义指令
 
-
+<br>
 
 ## 简介
 
@@ -1554,7 +1857,7 @@ Vue.directive("focus", {
 })
 ```
 
-
+<br>
 
 **`如果想注册局部指令，组件中也接受一个 directives 的选项：`**
 
@@ -1575,9 +1878,7 @@ directives: {
 <input v-focus>
 ```
 
-
-
-
+<br>
 
 ## 钩子函数
 
@@ -1589,7 +1890,7 @@ directives: {
 * **`componentUpdated：指令所在组件的 VNode 及其子 VNode 全部更新后调用。`**
 * **`unbind：只调用一次，指令与元素解绑时调用。`**
 
-
+<br>
 
 ## 钩子函数参数
 
@@ -1606,11 +1907,7 @@ directives: {
 * **`vnode：Vue 编译生成的虚拟节点。`**
 * **`oldVnode：上一个虚拟节点，仅在 update 和 componentUpdated 钩子中可用。`**
 
-
-
-
-
-
+<br>
 
 ## 函数简写
 
@@ -1622,11 +1919,7 @@ Vue.directive("color-swatch", function (el, binding) {
 })
 ```
 
-
-
-
-
-
+<br>
 
 ## 对象字面量
 
@@ -1643,9 +1936,71 @@ Vue.directive("demo", function (el, binding) {
 
 <br>
 
+## 全局指令示例
+
+```javascript
+// 注册一个全局自定义指令 v-focus
+Vue.directive('focus', {
+  // 当被绑定的元素插入到 DOM 中时……
+  inserted: function (el) {
+    // 聚焦元素
+    el.focus();
+  }
+});
+```
+
+**`使用：`**
+
+```vue
+<template>
+  <div>
+    <input type="text" v-focus placeholder="Focus me" />
+  </div>
+</template>
+```
+
+<br>
+
+## 局部指令示例
+
+```vue
+<template>
+  <div>
+    <input type="text" v-color="textColor" placeholder="Change my color" />
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      textColor: 'red'
+    };
+  },
+  directives: {
+    // 注册一个局部自定义指令 v-color
+    color: {
+      bind: function (el, binding) {
+        el.style.color = binding.value;
+      },
+      update: function (el, binding) {
+        el.style.color = binding.value;
+      }
+    }
+  }
+};
+</script>
+```
+
+
+
+<br>
+
 <br>
 
 # 过滤器
+
+<br>
 
 ## 全局过滤器
 
@@ -1675,7 +2030,7 @@ new Vue({
 </template>
 ```
 
-
+<br>
 
 ## 局部过滤器
 
@@ -1705,7 +2060,7 @@ export default {
 </script>
 ```
 
-
+<br>
 
 ## 过滤器链
 
@@ -1717,7 +2072,7 @@ export default {
 </template>
 ```
 
-
+<br>
 
 ## 过滤器参数
 
