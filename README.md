@@ -247,8 +247,14 @@ export const useUserStore = defineStore('user', () => {
   // State
   const userName = ref('John Doe');
 
+  // Getters
+  const getFullName = () => {
+    return userName.value + ' - User';
+  };
+
   return {
     userName,
+    getFullName,
   };
 });
 ```
@@ -276,18 +282,15 @@ export const useProductStore = defineStore('product', () => {
   const totalPrice = computed(() =>
     products.value.reduce((sum, product) => sum + product.price, 0)
   );
-  const getProductById = (productId: number) =>
-    products.value.find((product) => product.id === productId);
 
   const customizedGreeting = computed(() => {
-    return `Hello ${userStore.userName.value}, there are ${productCount.value} products in the store!`;
+    return `Hello ${userStore.getFullName()}, there are ${productCount.value} products in the store!`;
   });
 
   return {
     products,
     productCount,
     totalPrice,
-    getProductById,
     customizedGreeting,
   };
 });
