@@ -417,7 +417,43 @@ const styleObject = reactive({
 **`我们还可以给 :style 绑定一个包含多个样式对象的数组。这些对象会被合并后渲染到同一元素上：`**
 
 ```vue
-<div :style="[baseStyles, overridingStyles]"></div>
+<template>
+  <div :style="[baseStyles, overridingStyles]">
+    This is some text with dynamic styles.
+  </div>
+</template>
+
+<script>
+import { ref } from 'vue';
+
+export default {
+  setup() {
+    const baseStyles = ref({
+      color: 'red',
+      fontSize: '20px'
+    });
+
+    const overridingStyles = ref({
+      fontWeight: 'bold'
+    });
+
+    return {
+      baseStyles,
+      overridingStyles
+    };
+  }
+};
+</script>
+```
+
+### 数组中直接使用对象字面量
+
+```vue
+<template>
+  <div :style="[{ color: 'red', fontSize: '20px' }, { fontWeight: 'bold' }]">
+    This is some text with dynamic styles.
+  </div>
+</template>
 ```
 
 
