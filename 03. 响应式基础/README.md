@@ -202,7 +202,7 @@ async function increment() {
 
 ## `reactive()`
 
-**`还有另一种声明响应式状态的方式，即使用 reactive() API。与将内部值包装在特殊对象中的 ref 不同，reactive() 将使对象本身具有响应性：`**
+还有另一种声明响应式状态的方式，即使用 `reactive()` API。与将内部值包装在特殊对象中的 ref 不同，reactive() 将使对象本身具有响应性：
 
 ```javascript
 import { reactive } from "vue";
@@ -212,7 +212,7 @@ const state = reactive({ count: 0 });
 
 
 
-**`在模板中使用：`**
+在模板中使用：
 
 ```vue
 <button @click="state.count++">
@@ -220,27 +220,68 @@ const state = reactive({ count: 0 });
 </button>
 ```
 
+响应式对象是 JavaScript 代理，其行为就和普通对象一样。不同的是，Vue 能够拦截对响应式对象所有属性的访问和修改，以便进行依赖追踪和触发更新。
+
+`reactive()` 将深层地转换对象：当访问嵌套对象时，它们也会被 `reactive()` 包装。当 ref 的值是一个对象时，`ref()` 也会在内部调用它。与浅层 ref 类似，这里也有一个 `shallowReactive()` API 可以选择退出深层响应性。
 
 
 
+**Reactive Proxy vs Original**
 
-## `reactive() 的局限性`
+值得注意的是，`reactive()` 返回的是一个原始对象的 Proxy，它和原始对象是不相等的：
 
-**`reactive() API 有一些局限性：`**
+```javascript
+const raw = {};
+const proxy = reactive(raw);
 
-**`1. 有限的值类型：它只能用于对象类型（对象、数组和如 Map、Set 这样的集合类型）。它不能持有如 string、number 或 boolean 这样的原始类型。`**
+// 代理对象和原始对象不是全等的
+console.log(proxy === raw) // false
+```
 
-**`2. 不能替换整个对象：由于 Vue 的响应式跟踪是通过属性访问实现的，因此我们必须始终保持对响应式对象的相同引用。这意味着我们不能轻易地替换响应式对象，因为这样地话与第一个引用的响应式连接将丢失：`**
+只有代理对象是响应式的，更改原始对象不会触发更新。因此，使用 Vue 的响应式系统的最佳实践是仅使用你声明对象的代理版本。
+
+为保证访问代理的一致性，对同一个原始对象调用 `reactive()` 会总是返回同样的代理对象，而对一个已存在的代理对象调用 `reactive()` 会返回其本身：
+
+```javascript
+// 在同一个对象上调用 reactive() 会返回相同的代理
+console.log(reactive(raw) === proxy) // true
+
+// 在一个代理上调用 reactive() 会返回它自己
+console.log(reactive(proxy) === proxy) // true
+```
+
+这个规则对嵌套对象也适用。依靠深层响应性dd，响应式对象内的嵌套对象依然是代理：
+
+```javascript
+const proxy = reactive({});
+
+const raw = {};
+proxy.nested = raw;
+
+console.log(proxy.nested === raw) // false
+```
+
+<br>
+
+## `reactive() `的局限性
+
+`reactive()` API 有一些局限性：
+
+1. **有限的值类型**：它只能用于对象类型（对象、数组和如 `Map`、`Set` 这样的集合类型）。它不能持有如 `string`、`number` 或 `boolean` 这样的原始类型。
+
+2. **不能替换整个对象**：由于 Vue 的响应式跟踪是通过属性访问实现的，因此我们必须始终保持对响应式对象的相同引用。这意味着我们不能轻易地替换响应式对象，因为这样地话与第一个引用的响应式连接将丢失：
 
 ```javascript
 let state = reactive({ count: 0 });
 
+// 上面的 ({ count: 0 }) 引用将不再被追踪
+// (响应性连接已丢失！)
 state = reactive({ count: 1 });
 ```
 
 
 
-**`3. 对解构操作不友好：当我们将响应式对象的原始类型属性解构为本地变量时，或者将该属性传递给函数时，我们将丢失响应式连接：`**
+3. **对解构操作不友好**：当我们将响应式对象的原始类型属性解构为本地变量时，或者将该属性传递给函数时，我们将丢失响应式连接：
 
 ```javascript
 const state = reactive({ count: 0 });
@@ -255,4 +296,106 @@ count++;
 // 传入整个对象以保持响应性
 callSomeFunction(state.count);
 ```
+
+由于这些限制，我们建议使用 `ref()` 作为声明响应式状态的主要 API。
+
+<br>
+
+# 额外的 ref 解包细节
+
+## 作为 reactive 对象的属性
+
+一个 ref 会在作为响应式对象的属性被访问或修改时自动解包。换句话说，它的行为就像一个普通的属性：
+
+```javascript
+const count = ref(0);
+const state = reactive({
+    count
+})
+
+console.log(state.count) // 0
+
+state.count = 1
+console.log(count.value) // 1
+```
+
+如果将一个新的 ref 赋值给一个关联了已有 ref 的属性，那么它会替换掉旧的 ref：
+
+```javascript
+const otherCount = ref(2);
+
+state.count = otherCount;
+console.log(state.count) // 2
+// 原始 ref 现在已经和 state.count 失去联系
+console.log(count.value) // 1
+```
+
+只有当嵌套在一个深层响应式对象内时，才会发生 ref 解包。当其作为浅层响应式对象的属性被访问时不会解包。
+
+<br>
+
+## 数组和集合的注意事项
+
+与 reactive 对象不同的是，当 ref 作为响应式数组或原生集合类型（如 `Map`）中的元素被访问时，它不会被解包：
+
+```javascript
+const books = reactive([ref("Vue 3 Guide")]);
+// 这里需要 .value
+console.log(books[0].value)
+
+const map = reactive(new Map([["count", ref(0)]]))
+// 这里需要 .value
+console.log(map.get("count").value)
+```
+
+<br>
+
+## 在模板中解包的注意事项
+
+在模板渲染上下文中，只有顶级的 ref 属性才会被解包。
+
+在下面的例子中，`count` 和 `object` 是顶级属性，但 `object.id` 不是：
+
+```javascript
+const count = ref(0);
+const object = { id: ref(1) }
+```
+
+因此，这个表达式按预期工作：
+
+```vue
+{{ count + 1 }}
+```
+
+但这个不会
+
+```vue
+{{ object.id + 1 }}
+```
+
+渲染的结果将是 `[object Object]1`，因为在计算表达式时 `object.id` 没有被解包，仍然是一个 ref 对象。为了解决这个问题，我们可以将 `id` 解构为一个顶级属性：
+
+```javascript
+const { id } = object;
+```
+
+```javascript
+{{ id + 1 }}
+```
+
+现在渲染的结果将是 `2`。
+
+另一个需要注意的点是，如果 ref 是文本插值的最终计算值（即 `{{}}` 标签），那么它将被解包，因此以下内容将渲染为 `1`：
+
+```vue
+{{ object.id }}
+```
+
+该特性仅仅是文本插值的一个便利特性，等价于 `{{ object.id.value }}`。
+
+
+
+
+
+
 
