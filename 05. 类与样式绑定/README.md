@@ -73,7 +73,7 @@ const classObject = computed(() => ({
 <div :class="classObject"></div>
 ```
 
-
+<br>
 
 ### 绑定数组
 
@@ -171,89 +171,79 @@ Class 的绑定也是同样的：
 
 ### 绑定对象
 
-**`:style 支持绑定 JavaScript 对象值，对应的是 HTML 元素的 style 属性：`**
+`:style` 支持绑定 JavaScript 对象值，对应的是 HTML 元素的 style 属性：
 
-```vue
-<template>
-	<div :style="{ color: activeColor, fontSize: fontSize + 'px' }"></div>
-</template>
-
-<script setup>
-import { ref } from "vue";
-
+```javascript
 const activeColor = ref("red");
 const fontSize = ref(30);
-</script>
 ```
 
-尽管推荐使用 camelCase，但 :style 也支持 kebab-cased 形式的 CSS 属性 key （对应其 CSS 中的实际名称），例如：
+```vue
+<div :style="{ color: activeColor, fontSize: fontSize + 'px' }"></div>
+```
+
+尽管推荐使用 camelCase，但 `:style` 也支持 kebab-cased 形式的 CSS 属性 key （对应其 CSS 中的实际名称），例如：
 
 ```html
 <div :style="{ 'font-size': fontSize + 'px' }"></div>
 ```
 
-**`直接绑定一个样式对象通常是一个好主意，这样可以使模板更加简洁：`**
+直接绑定一个样式对象通常是一个好主意，这样可以使模板更加简洁：
 
-```vue
-<template>
-	<div :style="styleObject"></div>
-</template>
-
-<script setup>
-import { reactive } from "vue";
-
+```javascript
 const styleObject = reactive({
     color: 'red',
     fontSize: '30px'
 })
-</script>
 ```
 
-**`同样的，如果样式对象需要更复杂的逻辑，也可以使用返回样式对象的计算属性。`**
+```vue
+<div :style="styleObject"></div>
+```
 
+同样的，如果样式对象需要更复杂的逻辑，也可以使用返回样式对象的计算属性。
 
+`:style` 指令也可以和常规的 style attribute 共存，就像 `:class`。
+
+模板：
+
+```vue
+<h1 style="color: red;" :style="'font-size: 1em'">hello</h1>
+```
+
+这将被渲染为：
+
+```vue
+<h1 style="color: red; font-size: 1em;">hello</h1>
+```
+
+<br>
 
 ### 绑定数组
 
-**`我们还可以给 :style 绑定一个包含多个样式对象的数组。这些对象会被合并后渲染到同一元素上：`**
+我们还可以给 `:style` 绑定一个包含多个样式对象的数组。这些对象会被合并后渲染到同一元素上：
 
 ```vue
-<template>
-  <div :style="[baseStyles, overridingStyles]">
-    This is some text with dynamic styles.
-  </div>
-</template>
-
-<script>
-import { ref } from 'vue';
-
-export default {
-  setup() {
-    const baseStyles = ref({
-      color: 'red',
-      fontSize: '20px'
-    });
-
-    const overridingStyles = ref({
-      fontWeight: 'bold'
-    });
-
-    return {
-      baseStyles,
-      overridingStyles
-    };
-  }
-};
-</script>
+<div :style="[baseStyles, overridingStyles]"></div>
 ```
 
-### 数组中直接使用对象字面量
+<br>
+
+### 自动前缀
+
+当你在 `:style` 中使用了需要[浏览器特殊前缀](https://developer.mozilla.org/en-US/docs/Glossary/Vendor_Prefix)的 CSS 属性时，Vue 会自动为他们加上相应的前缀。Vue 是在运行时检查该属性是否支持在当前浏览器中使用。如果浏览器不支持某个属性，那么将尝试加上各个浏览器特殊前缀，以找到哪一个是被支持的。
+
+<br>
+
+### 样式多值
+
+你可以对一个样式属性提供多个 (不同前缀的) 值，举例来说：
 
 ```vue
-<template>
-  <div :style="[{ color: 'red', fontSize: '20px' }, { fontWeight: 'bold' }]">
-    This is some text with dynamic styles.
-  </div>
-</template>
+<div :style="{ display: ['-webkit-box', '-ms-flexbox', 'flex'] }"></div>
 ```
+
+数组仅会渲染浏览器支持的最后一个值。在这个示例中，在支持不需要特别前缀的浏览器中都会渲染为 `display: flex`。
+
+
 

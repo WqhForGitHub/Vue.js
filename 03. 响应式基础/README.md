@@ -121,6 +121,8 @@ function increment() {
 >
 >如果你没有使用单文件组件，你仍然可以在 [`setup()`](https://cn.vuejs.org/api/composition-api-setup.html) 选项中使用组合式 API。
 
+<br>
+
 ## 为什么要使用 ref？
 
 你可能会好奇：为什么我们需要使用带有 `.value` 的 ref，而不是普通的变量？为了解释这一点，我们需要简单地讨论一下 Vue 的响应式系统是如何工作的。
@@ -149,6 +151,8 @@ const myRef = {
 另一个 ref 的好处是，与普通变量不同，你可以将 ref 传递给函数，同时保留对最新值和响应式连接的访问。当将复杂的逻辑重构为可重用的代码时，这将非常有用。
 
 该响应性系统在[深入响应式系统](https://cn.vuejs.org/guide/extras/reactivity-in-depth.html)章节中有更详细的讨论。
+
+<br>
 
 ## 深层响应性
 
@@ -180,7 +184,7 @@ function mutateDeeply() {
 - [减少大型不可变数据的响应性开销](https://cn.vuejs.org/guide/best-practices/performance.html#reduce-reactivity-overhead-for-large-immutable-structures)
 - [与外部状态系统集成](https://cn.vuejs.org/guide/extras/reactivity-in-depth.html#integration-with-external-state-systems)
 
-
+<br>
 
 ## DOM 更新时机
 
@@ -198,7 +202,7 @@ async function increment() {
 }
 ```
 
-
+<br>
 
 ## `reactive()`
 
