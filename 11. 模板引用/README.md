@@ -127,3 +127,89 @@ onMounted(() => {
 
 如果一个子组件使用的是选项式 API 或没有使用 `<script setup>`，被引用的组件实例和该子组件的 `this` 完全一致，这意味着父组件对子组件的每一个属性和方法都有完全的访问权。这使得在父组件和子组件之间创建紧密耦合的实现细节变得很容易，当然也因此，应该只在绝对需要时，才使用组件引用。大多数情况下，你应该首先使用标准的 props 和 emit 接口来实现父子组件交互。
 
+有一个例外的情况，使用了 `<script setup>` 的组件是**默认私有**的：一个父组件无法访问到一个使用了 `<script setup>` 的子组件中的任何东西，除非子组件在其中通过 `defineExpose` 宏显式暴露：
+
+```vue
+<script setup>
+import { ref } from "vue";
+
+const a = 1;
+const b = ref(2);
+
+// 像 defineExpose 这样的编译器宏不需要导入
+defineExpose({
+    a,
+    b
+})
+</script>
+```
+
+当父组件通过模板引用获取到了该组件的实例时，得到得实例类型为 `{ a: number, b: number }`（ref 都会自动解包，和一般得实例一样）。
+
+请注意，defineExpose 必须在任何 await 操作之前调用。否则，在 await 操作后暴露的属性和方法将无法访问。
+
+<br>
+
+## `v-for` 中的模板引用
+
+>需要 v3.5 及以上版本
+
+当在 `v-for` 中使用模板引用时，对应的 ref 中包含的值是一个数组，它将在元素被挂载后包含对应整个列表的所有元素：
+
+```vue
+<template>
+	<ul>
+        <li v-for="item in list" ref="items">
+            {{ item }}
+    	</li>
+    </ul>
+</template>
+
+<script setup>
+import { ref, useTemplateRef, onMounted } from "vue";
+
+const list = ref([]);
+    
+const itemRefs = useTemplateRef("items");
+    
+onMounted(() => console.log(itemRefs.value))
+</script>
+```
+
+3.5 前的用法
+
+在 3.5 版本以前，`useTemplateRef()` 尚未引入，需要声明一个与模板引用 attribute 同名的 ref。该 ref 的值需要是一个数组。
+
+```vue
+<template>
+	<ul>
+        <li v-for="item in list" ref="itemRefs">
+            {{ item }}
+    	</li>
+    </ul>
+</template>
+
+<script setup>
+import { ref, onMounted } from "vue";
+
+const list = ref([]);
+    
+const itemRefs = ref([]);
+    
+onMounted(() => console.log(itemRefs.value));
+</script>
+```
+
+应该注意的是，ref 数组**并不**保证与源数组相同的顺序。
+
+<br>
+
+## 函数模板引用
+
+除了使用字符串值作名字，`ref` attribute 还可以绑定为一个函数，会在每次组件更新时都被调用。该函数会接收到元素引用作为其第一个参数：
+
+```vue
+<input :ref="(el) => { /* 将 el 赋值给一个数据属性或 ref 变量 */ }" />
+```
+
+注意我们这里需要使用动态的 `:ref` 绑定才能够传入一个函数。当绑定的元素被卸载时，函数也会被调用一次，此时的 `el` 参数会是 `null`。你当然也可以绑定一个组件方式而不是内联函数。
