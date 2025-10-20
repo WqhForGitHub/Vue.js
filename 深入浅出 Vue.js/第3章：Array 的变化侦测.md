@@ -142,8 +142,8 @@ function protoAugment (target, src, keys) {
 
 function copyAugment (target, src, keys) {
     for (let i = 0, l = keys.length; i < l; i++) {
-     const key = keys[i]
-     def(target, key, src[key])
+        const key = keys[i]
+        def(target, key, src[key])
     }
 }
 ```
@@ -298,9 +298,9 @@ export function observe (value, asRootData) {
     }
     let ob
     if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
-     ob = value.__ob__
+		ob = value.__ob__
     } else {
-     ob = new Observer(value)
+		ob = new Observer(value)
     }
     return ob
 }
@@ -408,10 +408,10 @@ export class Observer {
     // 缓存原始方法
     const original = arrayProto[method]
     def(arrayMethods, method, function mutator (...args) {
-     const result = original.apply(this, args)
-     const ob = this.__ob__
-     ob.dep.notify() // 向依赖发送消息
-     return result
+        const result = original.apply(this, args)
+        const ob = this.__ob__
+        ob.dep.notify() // 向依赖发送消息
+        return result
     })
 })
 ```
