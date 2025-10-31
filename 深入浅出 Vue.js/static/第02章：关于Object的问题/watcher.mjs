@@ -8,9 +8,9 @@ export default class Watcher {
   }
 
   get() {
-    window.target = this;
-    let value = this.getter.call(this.vm, this.vm);
-    window.target = undefined;
+    globalThis.target = this;
+    let value = this.getter.call(this.vm, this.vm); // 触发读操作
+    globalThis.target = undefined;
     return value;
   }
 
@@ -21,13 +21,14 @@ export default class Watcher {
   }
 }
 
-const bailRE = /[^/w.$]/;
+const bailRE = /[^\w.$]/;
 function parsePath(path) {
   if (bailRE.test(path)) {
     return;
   }
 
   const segments = path.split(".");
+
   return function (obj) {
     for (let i = 0; i < segments.length; i++) {
       if (!obj) return;

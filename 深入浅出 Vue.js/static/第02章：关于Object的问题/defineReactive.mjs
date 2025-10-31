@@ -1,6 +1,8 @@
+import Dep from "./dep.mjs";
 import Observer from "./observer.mjs";
 
 export default function defineReactive(data, key, val) {
+  // 递归子属性
   if (typeof val === "object") {
     new Observer(val);
   }

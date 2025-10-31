@@ -2,7 +2,6 @@ import defineReactive from "./defineReactive.mjs";
 
 export default class Observer {
   value;
-  dep;
 
   constructor(value) {
     this.value = value;
