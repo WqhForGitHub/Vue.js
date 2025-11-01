@@ -1,7 +1,7 @@
-import { Observer } from "./observer.mjs";
+import Observer from "./observer.mjs";
 import Dep from "./dep.mjs";
 
-export function defineReactive(data, key, val) {
+export default function defineReactive(data, key, val) {
   let childOb = observe(val); // 修改
 
   const dep = new Dep(); // 依赖收集器
@@ -11,9 +11,8 @@ export function defineReactive(data, key, val) {
     configurable: true,
     get() {
       dep.depend();
-      // 这里收集 Array 的依赖
 
-      // 新增
+      // 数组的 Observer 实例
       if (childOb) {
         childOb.dep.depend();
       }
@@ -29,17 +28,17 @@ export function defineReactive(data, key, val) {
 }
 
 // 引用类型
-export function isObject(obj) {
+function isObject(obj) {
   return obj !== null && typeof obj === "object";
 }
 
 // 对象自身是否有某个属性
-export function hasOwn(obj, key) {
+function hasOwn(obj, key) {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
 // 尝试为 value 创建一个 Observer 实例
-export function observe(value, asRootData) {
+function observe(value, asRootData) {
   if (!isObject(value)) {
     return;
   }

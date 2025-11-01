@@ -1,10 +1,10 @@
 import defineReactive from "./defineReactive.mjs";
-// import { arrayMethods } from "./arrayMethod.mjs";
+import { arrayMethods } from "./arrayMethod.mjs";
 import Dep from "./dep.mjs";
 
 // __proto__ 是否可用
-// const hasProto = "__proto__" in {};
-// const arrayKeys = Object.getOwnPropertyNames(arrayMethods);
+const hasProto = "__proto__" in {};
+const arrayKeys = Object.getOwnPropertyNames(arrayMethods);
 
 export default class Observer {
   constructor(value) {
@@ -13,6 +13,8 @@ export default class Observer {
     def(value, "__ob__", this); // 新增
 
     if (Array.isArray(value)) {
+      const augment = hasProto ? protoAugment : copyAugment;
+      augment(value, arrayMethods, arrayKeys);
       this.observeArray(value);
     } else {
       this.walk(value);
@@ -44,16 +46,16 @@ function def(obj, key, val, enumerable) {
   });
 }
 
-// function protoAugment(target, src, keys) {
-//   target.__proto__ = src;
-// }
+function protoAugment(target, src, keys) {
+  target.__proto__ = src;
+}
 
-// function copyAugment(target, src, keys) {
-//   for (let i = 0, l = keys.length; i < l; i++) {
-//     const key = keys[i];
-//     def(target, key, src[key]);
-//   }
-// }
+function copyAugment(target, src, keys) {
+  for (let i = 0, l = keys.length; i < l; i++) {
+    const key = keys[i];
+    def(target, key, src[key]);
+  }
+}
 
 // 引用类型
 function isObject(obj) {

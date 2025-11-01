@@ -1,37 +1,39 @@
 export default class Watcher {
-  constructor(vm, expOrFn, cb, options) {
+  constructor(vm, expOrFn, cb) {
     this.vm = vm;
+    // 执行 this.getter()，就可以读取 data.a.b.c 的内容
+    this.getter = parsePath(expOrFn);
     this.cb = cb;
-    this.getter = parsePath(expOrFn); // 解析路径，如 'a.b.c'
     this.value = this.get();
-
-    if (options.deep) {
-      this.deep = true;
-      this.traverse(value); // 递归遍历对象
-    }
   }
 
   get() {
-    Dep.target = this; // 设置当前 Watcher
-    const value = this.getter.call(this.vm, this.vm); // 触发 getter，收集依赖
-    Dep.target = null; // 清理
+    globalThis.target = this;
+    let value = this.getter.call(this.vm, this.vm); // 触发读操作
+    globalThis.target = undefined;
     return value;
   }
 
   update() {
     const oldValue = this.value;
-    const newValue = this.get();
-    if (oldValue !== newValue) {
-      this.cb.call(this.vm, newValue, oldValue);
-    }
+    this.value = this.get();
+    this.cb.call(this.vm, this.value, oldValue);
+  }
+}
+
+const bailRE = /[^\w.$]/;
+function parsePath(path) {
+  if (bailRE.test(path)) {
+    return;
   }
 
-  // 深度监听
-  traverse(val) {
-    if (isObject(val)) {
-      for (const key in val) {
-        this.traverse(val[key]); // 递归访问每个属性，触发 getter
-      }
+  const segments = path.split(".");
+
+  return function (obj) {
+    for (let i = 0; i < segments.length; i++) {
+      if (!obj) return;
+      obj = obj[segments[i]];
     }
-  }
+    return obj;
+  };
 }
