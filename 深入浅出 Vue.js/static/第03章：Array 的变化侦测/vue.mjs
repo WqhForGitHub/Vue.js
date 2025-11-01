@@ -4,7 +4,7 @@ import Watcher from "./watcher.mjs";
 class Vue {
   constructor(options) {
     this._data = options.data;
-    observe(this._data.list);
+    observe(this._data);
 
     new Watcher(this, "_data.list", (newVal, oldVal) => {
       console.log("newVal, oldVal: ", newVal, oldVal);
