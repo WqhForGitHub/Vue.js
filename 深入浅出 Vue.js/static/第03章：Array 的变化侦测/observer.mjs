@@ -1,5 +1,5 @@
 import defineReactive from "./defineReactive.mjs";
-import { arrayMethods } from "./arrayMethod.mjs";
+// import { arrayMethods } from "./arrayMethod.mjs";
 import Dep from "./dep.mjs";
 
 // __proto__ 是否可用
@@ -56,17 +56,17 @@ function def(obj, key, val, enumerable) {
 // }
 
 // 引用类型
-export function isObject(obj) {
+function isObject(obj) {
   return obj !== null && typeof obj === "object";
 }
 
 // 对象自身是否有某个属性
-export function hasOwn(obj, key) {
+function hasOwn(obj, key) {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
 // 尝试为 value 创建一个 Observer 实例
-export function observe(value, asRootData) {
+function observe(value, asRootData) {
   if (!isObject(value)) {
     return;
   }
