@@ -48,7 +48,7 @@ obj.text = 'hello vue3' // 修改 obj.text 的值，同时希望副作用函数�
 
 如果我们能**拦截**一个对象的读取和设置操作，事情就变得简单了：当读取字段 `obj.text` 时，我们可以把副作用函数 `effect` 存储到一个 “桶” 里（如图 4-1 所示）
 
-![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E5%B0%86%E5%89%AF%E4%BD%9C%E7%94%A8%E5%87%BD%E6%95%B0%E5%AD%98%E5%82%A8%E5%88%B0%E6%A1%B6%E4%B8%AD.png)
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E5%B0%86%E5%89%AF%E4%BD%9C%E7%94%A8%E5%87%BD%E6%95%B0%E5%AD%98%E5%82%A8%E5%88%B0%E6%A1%B6%E4%B8%AD.png)
 
 接着，当设置 `obj.text` 时，再把副作用函数 `effect` 从 “桶” 里取出并执行即可（如图 4-2 所示）。
 
@@ -120,8 +120,78 @@ setTimeout(() => {
 let activeEffect
 // effect 函数用于注册副作用函数
 function effect(fn) {
+	// 当调用 effect 注册副作用函数时，将副作用函数 fn 赋值给 activeEffect
+	activeEffect = fn;
+    // 执行副作用函数
+    fn();
+}
 ```
 
+首先，定义了一个全局变量 activeEffect，初始值是 undefined，它的作用是存储被注册的副作用函数。接着重新定义了 effect 函数，它变成了一个用来注册副作用函数的函数，effect 函数接收一个参数 fn，即要注册的副作用函数。我们可以按照如下所示的方式使用 effect 函数：
+
+```javascript
+// 一个匿名的副作用函数
+effect(() => {
+    documnt.body.innerText = obj.text
+})
+```
+
+可以看到，我们使用一个匿名的副作用函数作为 effect 函数的参数。当 effect 函数执行时，首先会把匿名的副作用函数 fn 赋值给全局变量 activeEffect。接着执行被注册的匿名副作用函数 fn，这将会触发响应式数据 obj.text 的读取操作，进而触发代理对象 Proxy 的 get 拦截函数：
+
+```javascript
+const obj = new Proxy(data, {
+    get(target, key) {
+        if (activeEffect) {
+            bucket.add(activeEffect); // 新增
+        }
+        return target[key]
+    },
+    set(target, key, newVal) {
+        target[key] = newVal;
+        bucket.forEach(fn => fn());
+        return true;
+    }
+})
+```
+
+如上面的代码所示，由于副作用函数已经存储到了 activeEffect 中，所以在 get 拦截函数内应该把 activeEffect 收集到桶中，这样响应式系统就不依赖副作用函数的名字了。
+
+但如果我们再对讨论这个系统稍加测试，例如在响应式数据 obj 上设置一个不存在的属性时：
+
+```javascript
+// 匿名副作用函数
+effect(() => {
+    console.log('effect run'); // 会打印 2 次
+    document.body.innerText = obj.txt;
+})
+```
+
+```javascript
+setTimeout(() => {
+	// 副作用函数中并没有读取 notExist 属性的值
+    obj.notExist = 'hello vue3';
+}, 1000);
+```
+
+可以看到，匿名副作用函数内部读取了字段 obj.text 的值，于是匿名副作用函数与字段 obj.text 之间会建立响应联系。接着，我们开启了一个定时器，一秒钟后为对象 obj 添加新的 notExist 属性。我们知道，在匿名副作用函数内并没有读取 obj.notExist 属性的值，所以理论上，字段 obj.notExist 并没有与副作用建立响应联系，因此，定时器内语句的执行不应该触发匿名副作用函数重新执行。但如果我们执行上述这段代码就会发现，定时器到时后，匿名副作用函数却重新执行了，这是不正确的。为了解决这个问题，我们需要重新设计桶的数据结构。
+
+在上一节的例子中，我们使用一个 Set 数据结构作为存储副作用函数的桶。导致该问题的根本原因是，我们**没有在副作用函数与被操作的目标字段之间建立明确的联系**。例如当读取属性时，无论读取的是哪一个属性，其实都一样，都会把副作用函数收集到桶里。当设置属性时，无论设置的是哪一个属性，也都会把桶里的副作用取出并执行。副作用函数与被操作的字段之间没有明确的联系。解决方法很简单，只需要在副作用函数与被操作的字段之间建立联系即可，这就需要我们重新设计桶的数据结构，而不能简单地使用一个 Set 类型的数据作为桶了。
+
+那应该设计怎样的数据结构呢？在回答这个问题之前，我们需要先仔细观察下面的代码：
+
+```javascript
+effect(function effectFn() {
+    document.body.innerText = obj.text;
+})
+```
+
+在这段代码中存在三个角色：
+
+* 被操作（读取）的代理对象 obj
+* 被操作（读取）的字段名 text
+* 使用 effect 函数注册的副作用函数 effectFn
+
+如果用 target 来表示一个代理对象所代理的原始对象，用 key 来表示被操作的字段名，用 effectFn 来表示被注册的副作用函数，那么可以为这三个角色建立如下关系：
 
 
 
@@ -142,3 +212,23 @@ function effect(fn) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
