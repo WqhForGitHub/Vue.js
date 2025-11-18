@@ -52,7 +52,7 @@ obj.text = 'hello vue3' // 修改 obj.text 的值，同时希望副作用函数�
 
 接着，当设置 `obj.text` 时，再把副作用函数 `effect` 从 “桶” 里取出并执行即可（如图 4-2 所示）。
 
-![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E6%8A%8A%E5%89%AF%E4%BD%9C%E7%94%A8%E5%87%BD%E6%95%B0%E4%BB%8E%E6%A1%B6%E5%86%85%E5%8F%96%E5%87%BA%E5%B9%B6%E6%89%A7%E8%A1%8C.png)
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E6%8A%8A%E5%89%AF%E4%BD%9C%E7%94%A8%E5%87%BD%E6%95%B0%E4%BB%8E%E6%A1%B6%E5%86%85%E5%8F%96%E5%87%BA%E5%B9%B6%E6%89%A7%E8%A1%8C.png)
 
 现在问题的关键变成了我们如何才能拦截一个对象属性的读取和设置操作。在 ES5 只能通过 `Object.defineProperty` 函数实现，这也是 Vue.js 2 所采用的方式。在 ES6 我们可以使用代理对象 `Proxy` 来实现，这也是 Vue.js 3 所采用的方式。
 
@@ -193,7 +193,7 @@ effect(function effectFn() {
 
 如果用 target 来表示一个代理对象所代理的原始对象，用 key 来表示被操作的字段名，用 effectFn 来表示被注册的副作用函数，那么可以为这三个角色建立如下关系：
 
-
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E4%B8%89%E4%B8%AA%E8%A7%92%E8%89%B2%E5%BB%BA%E7%AB%8B%E5%85%B3%E7%B3%BB.png)
 
 
 
