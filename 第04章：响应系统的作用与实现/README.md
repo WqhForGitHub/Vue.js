@@ -195,6 +195,113 @@ effect(function effectFn() {
 
 ![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E4%B8%89%E4%B8%AA%E8%A7%92%E8%89%B2%E5%BB%BA%E7%AB%8B%E5%85%B3%E7%B3%BB.png)
 
+这是一种树型结构，下面举几个例子来对其进行补充说明。
+
+如果有两个副作用函数同时读取同一个对象的属性值：
+
+```javascript
+effect(function effectFn1() {
+    obj.text
+})
+effect(function effectFn2() {
+    obj.text
+})
+```
+
+那么关系如下：
+
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E5%85%B3%E7%B3%BB2.png)
+
+如果一个副作用函数中读取了同一个对象的两个不同属性：
+
+```javascript
+effect(function effectFn() {
+    obj.text1;
+    obj.text2;
+})
+```
+
+那么关系如下：
+
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E5%85%B3%E7%B3%BB3.png)
+
+如果在不同的副作用函数中读取了两个不同对象的不同属性：
+
+```javascript
+effect(function effectFn1() {
+    obj1.text1
+})
+effect(function effectFn2() {
+    obj2.text2
+})
+```
+
+那么关系如下：
+
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E5%85%B3%E7%B3%BB4.png)
+
+总之，这其实就是一个树型数据结构。这个联系建立起来之后，就可以解决前文提到的问题了。拿上面的例子来说，如果我们设置了 obj2.text2 的值，就只会导致 effect2 函数重新执行，并不会导致 effectFn1 函数重新执行。
+
+接下来我们尝试用代码来实现这个新的桶。首先，需要使用 WeakMap 代替 Set 作为桶的数据结构：
+
+```javascript
+// 存储副作用函数的桶
+const bucket = new WeakMap();
+```
+
+然后修改 get/set 拦截器代码：
+
+```javascript
+const obj = new Proxy(data, {
+    // 拦截读取操作
+    get(target, key) {
+        // 没有 activeEffect，直接 return
+        if (!activeEffect) return target[key];
+        // 根据 target 从桶中取得 depsMap，它也是一个 Map 类型：key --> effects
+        let depsMap = bucket.get(target);
+        // 如果不存在 depsMap，那么新建一个 Map 并与 target 关联
+        if (!depsMap) {
+            bucket.set(target, (depsMap = new Map()));
+        }
+        // 再根据 key 从 depsMap 中取得 deps，它是一个 Set 类型，
+        // 里面存储着所有与当前 key 相关联的副作用函数：effects
+        let deps = depsMap.get(key);
+        // 如果 deps 不存在，同样新建一个 Set 并与 key 关联
+        if (!deps) {
+            depsMap.set(key, (deps = new Set()))
+        }
+        // 最后将当前激活的副作用函数添加到桶里
+        deps.add(activeEffect);
+        
+        // 返回属性值
+        return target[key];
+    },
+    // 拦截设置操作
+    set(target, key, newVal) {
+        // 设置属性值
+        target[key] = newVal;
+        // 根据 target 从桶中取得 depsMap，它是 key --> effects
+        const depsMap = bucket.get(target);
+        if (!depsMap) return
+        // 根据 key 取得所有副作用函数 effects
+        const effects = depsMap.get(key);
+        // 执行副作用函数
+        effects && effects.forEach(fn => fn());
+    }
+})
+```
+
+从这段代码可以看出构建数据结构的方式，我们分别使用了 WeakMap、Map 和 Set：
+
+* WeakMao 由 target --> Map 构成
+* Map 由 key --> Set 构成
+
+其中 WeakMap 的键是原始对象 target，WeakMap 的值是一个 Map 实例，而 Map 的键是原始对象 target 的 key，Map 的值是一个由副作用函数组成的 Set。它们的关系如下图所示。
+
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/WeakMap%E3%80%81Map%20%E5%92%8C%20Set%20%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB.png)
+
+
+
 
 
 
