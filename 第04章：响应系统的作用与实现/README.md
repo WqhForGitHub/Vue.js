@@ -300,6 +300,31 @@ const obj = new Proxy(data, {
 
 ![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/WeakMap%E3%80%81Map%20%E5%92%8C%20Set%20%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB.png)
 
+为了方便描述，我们把上图中的 Set 数据结构所存储的副作用函数集合称为 key 的**依赖集合**。
+
+搞清了它们之间的关系，我们有必要解释一下这里为什么要使用 WeakMap，这其实涉及 WeakMap 和 Map 的区别，我们用一段代码来讲解：
+
+```javascript
+const map = new Map();
+const weakmap = new WeakMap();
+
+(function() {
+    const foo = { foo: 1 };
+    const bar = { bar: 2 };
+    
+    map.set(foo, 1);
+    weakmap.set(bar, 2);
+})()
+```
+
+
+
+
+
+
+
+
+
 
 
 
