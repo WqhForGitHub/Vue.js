@@ -317,6 +317,57 @@ const weakmap = new WeakMap();
 })()
 ```
 
+首先，我们定义了 map 和 weakmap 常量，分别对应 Map 和 WeakMap 的实例。接着定义了一个立即执行的函数表达式（IIFE），在函数表达式内部定义了两个对象：foo 和 bar，这两个对象分别作为 map 和 weakmap 的 key。当该函数表达式执行完毕后，对于对象 foo 来说，它仍然作为 map 的 key 被引用着，因此垃圾回收器不会把它从内存中移除，我们仍然可以通过 map.keys 打印出对象 foo。然而对于对象 bar 来说，由于 WeakMap 的 key 是弱引用，它不影响垃圾回收器的工作，所以一旦表达式执行完毕，垃圾回收器就会把对象 bar 从内存中移除，并且我们无法获取 weakmap 的 key 值，也就无法通过 weakmap 取得对象 bar。
+
+简单地说，WeakMap 对 key 是弱引用，不影响垃圾回收器地工作。据这个特性可知，一旦 key 被垃圾回收器回收，那么对应的键和值就访问不到了。所以 WeakMap 经常用于存储那些只有当 key 所引用的对象存在时（没有被回收）才有价值的信息，例如上面的场景中，如果 target 对象没有任何引用了，说明用户侧不再需要它了，这时垃圾回收器会完成回收任务。但如果使用 Map 来代替 WeakMap，那么即使用户侧的代码对 target 没有任何引用，这个 target 也不会被回收，最终可能导致内存溢出。
+
+最后，我们对上下文中的代码做一些封装处理。在目前的实现中，当读取属性值时，我们直接在 get 拦截函数里编写把副作用函数收集到桶里的这部分逻辑，但更好的做法是将这部分逻辑单独封装到一个 track 函数中，函数的名字叫 track 是为了表达追踪的含义。同样，我们也可以把触发副作用函数重新执行的逻辑封装到 trigger 函数中：
+
+```javascript
+let activeEffect;
+
+const obj = new Proxy(data, {
+    // 拦截读取操作
+    get(target, key) {
+        // 将副作用函数 activeEffect 添加到存储副作用函数的桶中
+        track(target, key);
+        // 返回属性值
+        return target[key]
+    },
+    // 拦截设置操作
+    set(target, key, newVal) {
+        // 设置属性值
+        target[key] = newVal;
+        // 把副作用函数从桶里取出并执行
+        trigger(target, key);
+    }
+})
+
+// 在 get 拦截函数内调用 track 函数追踪变化
+function track(target, key) {
+    // 没有 activeEffect，直接 return
+    if (!activeEffect) return;
+    let depsMap = bucker.get(target);
+    if (!depsMap) {
+        bucket.set(target, (depsMap = new Map()))
+    }
+    let deps = depsMap.get(key);
+    if (!deps) {
+        depsMap.set(key, (deps = new Set()))
+    }
+    deps.add(activeEffect);
+}
+// 在 set 拦截函数内调用 trigger 函数触发变化
+function trigger(target, key) {
+    const depsMap = bucket.get(target);
+    if (!depsMap) return
+    const effects = depsMap.get(key);
+    effects && effects.forEach(fn => fn());
+}
+```
+
+如以上代码所示，分别把逻辑封装到 track 和 trigger 函数内，这能为我们带来极大的灵活性。
+
 
 
 
