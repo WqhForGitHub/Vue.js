@@ -368,17 +368,26 @@ function trigger(target, key) {
 
 如以上代码所示，分别把逻辑封装到 track 和 trigger 函数内，这能为我们带来极大的灵活性。
 
+# 4.4 分支切换与 cleanup
 
+首先，我们需要明确分支切换的定义，如下面的代码所示：
 
+```javascript
+const data = { ok: true, text: 'hello world' };
+const obj = new Proxy(data, {});
 
+effect(function effectFn() {
+    document.body.innerText = obj.ok ? obj.text : 'not';
+})
+```
 
+在 effectFn 函数内部存在一个三元表达式，根据字段 obj.ok 值的不同会执行不同的代码分支。当字段 obj.ok 的值发生变化时，代码执行的分支会跟着变化，这就是所谓的分支切换。
 
+分支切换可能会产生遗留的副作用函数。拿上面这段代码来说，字段 obj.ok 的初始值为 true，这时会读取字段 obj.text 的值，所以当 effectFn 函数执行时会触发字段 obj.ok 和字段 obj.text 这两个属性的读取操作，此时副作用函数 effectFn 与响应式数据之间建立的联系如下：
 
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/data.png)
 
-
-
-
-
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E5%89%AF%E4%BD%9C%E7%94%A8%E5%87%BD%E6%95%B0%E4%B8%8E%E5%93%8D%E5%BA%94%E5%BC%8F%E6%95%B0%E6%8D%AE%E4%B9%8B%E9%97%B4%E7%9A%84%E8%81%94%E7%B3%BB.png)
 
 
 
