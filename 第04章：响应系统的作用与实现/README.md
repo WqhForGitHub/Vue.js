@@ -389,6 +389,143 @@ effect(function effectFn() {
 
 ![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E5%89%AF%E4%BD%9C%E7%94%A8%E5%87%BD%E6%95%B0%E4%B8%8E%E5%93%8D%E5%BA%94%E5%BC%8F%E6%95%B0%E6%8D%AE%E4%B9%8B%E9%97%B4%E7%9A%84%E8%81%94%E7%B3%BB.png)
 
+可以看到，副作用函数 effectFn 分别被字段 data.ok 和字段 data.text 所对应的依赖集合收集。当字段 obj.ok 的值修改为 false，并触发副作用函数重新执行后，由于此时字段 obj.text 不会被读取，只会触发字段 obj.ok 的读取操作，所以理想情况下副作用函数 effectFn 不应该被字段 obj.text 所对应的依赖集合收集，如下图所示。
+
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%90%86%E6%83%B3%E6%83%85%E5%86%B5%E4%B8%8B%E5%89%AF%E4%BD%9C%E7%94%A8%E5%87%BD%E6%95%B0%E4%B8%8E%E5%93%8D%E5%BA%94%E5%BC%8F%E6%95%B0%E6%8D%AE%E4%B9%8B%E9%97%B4%E7%9A%84%E8%81%94%E7%B3%BB.png)
+
+但按照前文的发现，我们还做不到这一点。也就是说，当我们把字段 obj.ok 的值修改为 false，并触发副作用函数重新执行之后，整个依赖关系仍然保持上图所描述的那样，这时就产生了遗留的副作用函数。
+
+遗留的副作用函数会导致不必要的更新，拿下面这段代码来说：
+
+```javascript
+const data = { ok: true, text: 'hello world' };
+const obj = new Proxy(data, {});
+
+effect(function effectFn() {
+    document.body.innerText = obj.ok ? obj.text : 'not';
+})
+```
+
+obj.ok 的初始值为 true，当我们将其修改为 false 后：
+
+```javascript
+obj.ok = false;
+```
+
+这会触发更新，即副作用函数会重新执行。但由于此时 obj.ok 的值为 false，所以不再会读取字段 obj.text 的值。换句话说，无论字段 obj.text 的值如何改变，document.body.innerText 的值始终都是字符串 'not'。所以最好的结果是，无论 obj.text 的值怎么变，都不需要重新执行副作用函数。但事实并非如此，如果我们再尝试修改 obj.text 的值：
+
+```javascript
+obj.text = 'hello vue3';
+```
+
+这仍然会导致副作用函数重新执行，即使 document.body.innerText 的值不需要变化。
+
+解决这个问题的思路很简单，每次副作用函数执行时，我们可以先把它从所有与之关联的依赖集合中删除，如下图所示。
+
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E6%96%AD%E5%BC%80%E5%89%AF%E4%BD%9C%E7%94%A8%E5%87%BD%E6%95%B0%E4%B8%8E%E5%93%8D%E5%BA%94%E5%BC%8F%E6%95%B0%E6%8D%AE%E4%B9%8B%E9%97%B4%E7%9A%84%E8%81%94%E7%B3%BB.png)
+
+当副作用函数执行完毕后，会重新建立联系，但在新的联系中不会包含遗留的副作用函数，即上图所描述的那样。所以，如果我们能做到每次副作用函数执行前，将其从相关联的依赖集合中移除，那么问题就迎刃而解了。
+
+要将一个副作用函数从所有与之关联的依赖集合中移除，就需要明确知道哪些依赖集合章包含它，因此我们需要重新设计副作用函数，如下面的代码所示。在 effect 内部我们定义了新的 effectFn 函数，并为其添加了 effectFn.deps 属性，该属性是一个数组，用来存储所有包含当前副作用函数的依赖集合：
+
+```javascript
+// 用一个全局变量存储被注册的副作用函数
+let activeEffect;
+function effect(fn) {
+    const effectFn = () => {
+        // 当 effectFn 执行时，将其设置为当前激活的副作用函数
+        activeEffect = effectFn;
+        fn();
+    }
+    // activeEffect.deps 用来存储所有与该副作用函数相关联的依赖集合
+    effectFn.deps = [];
+    // 执行副作用函数
+    effectFn();
+}
+```
+
+那么 effectFn.deps 数组中的依赖集合是如何收集的呢？其实是在 track 函数中：
+
+```javascript
+function track(target, key) {
+    // 没有 activeEffect，直接 return
+    if (!activeEffect) return
+    let depsMap = bucket.get(target);
+    if (!depsMap) {
+        bucket.set(target, (depsMap = new Map()))
+    }
+    let deps = depsMap.get(key);
+    if (!deps) {
+        depsMap.set(key, (deps = new Set()));
+    }
+    // 把当前激活的副作用函数添加到依赖集合 deps 中
+    deps.add(activeEffect);
+    // deps 就是一个与当前副作用函数存在联系的依赖集合
+    // 将其添加到 activeEffect.deps 函数中
+    activeEffect.deps.push(deps); // 新增
+}
+```
+
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E5%AF%B9%E4%BE%9D%E8%B5%96%E9%9B%86%E5%90%88%E7%9A%84%E6%94%B6%E9%9B%86.png)
+
+有了这个联系后，我们就可以在每次副作用函数执行时，根据 effectFn.deps 获取所有相关联的依赖集合，进而将副作用函数从依赖集合中移除：
+
+```javascript
+// 用一个全局变量存储被注册的副作用函数
+let activeEffect;
+function effect(fn) {
+    const effectFn = () => {
+        // 调用 cleanup 函数完成清除工作
+        cleanup(effectFn); // 新增
+        activeEffect = effectFn;
+        fn();
+    }
+    effectFn.deps = [];
+    effectFn();
+}
+```
+
+下面是 cleanup 函数的实现：
+
+```javascript
+function cleanup(effectFn) {
+    // 遍历 effectFn.deps 数组
+    for (let i = 0; i < effectFn.deps.length; i++) {
+        // deps 是依赖集合
+        const deps = effectFn.deps[i];
+        // 将 effectFn 从依赖集合中移除
+        deps.delete(effectFn);
+    }
+    // 最后需要重置 effectFn.deps 数组
+    effectFn.deps.length = 0;
+}
+```
+
+cleanup 函数接收副作用函数作为参数，遍历副作用函数的 effectFn.deps 数组，该数组的每一项都是一个依赖集合，然后将该副作用函数从依赖集合中移除，最后重置 effectFn.deps 数组。
+
+至此，我们的响应系统已经可以避免副作用函数产生遗留了。但如果你尝试运行代码，会发现目前的实现会导致无限循环执行，问题出在 trigger 函数中：
+
+```javascript
+function trigger(target, key) {
+    const depsMap = bucket.get(target);
+    if (!depsMap) return;
+    const effects = depsMap.get(key);
+    effects && effects.forEach(fn => fn()); // 问题出在这句代码
+}
+```
+
+在 trigger 函数内部，我们遍历 effects 集合，它是一个 Set 集合，里面存储副作用函数。当副作用函数执行时，会调用 cleanup 进行清除，实际上就是从 effects 集合中将当前执行的副作用函数剔除，但是副作用函数的执行会导致其重新被收集到集合中，而此时对于 effects 集合的遍历仍在进行。这个行为可以用如下简短的代码来表达：
+
+```javascript
+const set = new Set([1]);
+
+set.forEach(item => {
+    set.delete(1);
+    set.add(1);
+    console.log('遍历中')
+})
+```
+
 
 
 
