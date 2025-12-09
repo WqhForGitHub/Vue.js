@@ -526,6 +526,41 @@ set.forEach(item => {
 })
 ```
 
+在上面这段代码中，我们创建而来一个集合 set，它里面有一个元素数字 1，接着我们调用 forEach 遍历该集合。在遍历过程中，首先调用 delete(1) 删除数字 1，紧接着调用 add(1) 将数字 1 加回，最后打印遍历中。如果我们在浏览器中执行这段代码，就会发现它会无限执行下去。
+
+语言规范中对此有明确的说明：在调用 forEach 遍历 Set 集合时，如果一个值已经被访问过了，但该值被删除并重新添加到集合，如果此时 forEach 遍历没有结束，那么该值会重新被访问。因此，上面的代码会无限执行。解决办法很简单，我们可以构造另外一个 Set 集合并遍历它：
+
+```javascript
+const set = new Set([1]);
+
+const newSet = new Set(set);
+newSet.forEach(item => {
+    set.delete(1);
+    set.add(1);
+    console.log('遍历中');
+})
+```
+
+这样就不会无限执行了。回到 trigger 函数，我们需要同样的手段来避免无限执行：
+
+```javascript
+function trigger(target, key) {
+    const depsMap = bucket.get(target);
+    if (!depsMap) return
+    const effects = depsMap.get(key);
+    
+    const effectsToRun = new Set(effects); // 新增
+    effectsToRun.forEach(effectFn => effectFn()); // 新增
+    // effects && effects.forEach(effectFn => effectFn()) // 删除
+}
+```
+
+如以上代码所示，我们新构造了 effectsToRun 集合并遍历它，代替直接遍历 effects 集合，从而避免了无限执行。
+
+>提示
+>
+>ECMA 关于 Set.prototype.forEach 的规范，可参见 ECMAScript 2020 Language Specification。
+
 
 
 
