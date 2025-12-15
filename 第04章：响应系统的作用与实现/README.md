@@ -561,7 +561,93 @@ function trigger(target, key) {
 >
 >ECMA 关于 Set.prototype.forEach 的规范，可参见 ECMAScript 2020 Language Specification。
 
+# 4.5 嵌套的 effect 与 effect 栈
 
+effect 是可以发生嵌套的，例如：
+
+```javascript
+effect(function effectFn1() {
+    effect(function effectFn2() {})
+})
+```
+
+在上面这段代码中，effectFn1 内部嵌套了 effectFn2，effectFn1 的执行会导致 effectFn2 的执行。那么，什么场景下会出现嵌套的 effect 呢？拿 Vue.js 来说，实际上 Vue.js 的渲染函数就是在一个 effect 中执行的：
+
+```javascript
+// Foo 组件
+const Foo = {
+    render() {
+        return /* ... */
+    }
+}
+```
+
+在一个 effect 中执行 Foo 组件的渲染函数：
+
+```javascript
+effect(() => {
+    Foo.render();
+})
+```
+
+当组件发生嵌套时，例如 Foo 组件渲染了 Bar 组件：
+
+```javascript
+// Bar 组件
+const Bar =- {
+    render() { /* ... */ }
+}
+
+// Foo 组件渲染了 Bar 组件
+const Foo = {
+    render() {
+        return <Bar /> // jsx 语法
+    }
+}
+```
+
+此时就发生了 effect 嵌套，它相当于：
+
+```javascript
+effect(() => {
+    Foo.render();
+    
+    // 嵌套
+    effect(() => {
+        Bar.render();
+    })
+})
+```
+
+这个例子说明了为什么 effect 要设计成可嵌套的。接下来，我们需要搞清楚，如果 effect 不支持嵌套会发生什么？实际上，按照前文的介绍与实现来看，我们所实现的响应系统并不支持 effect 嵌套，可以用下面的代码来测试一下：
+
+```javascript
+// 原始数据
+const data = { foo: true, bar: true };
+
+// 代理对象
+const obj = new Proxy(data, { /* ... */ })
+
+// 全局变量
+let temp1, temp2;
+
+// effectFn1 嵌套了 effectFn2
+effect(function effectFn1() {
+    console.log('effectFn1 执行');
+    
+    effect(function effectFn2() {
+        console.log('effectFn2 执行');
+        // 在 effectFn2 中读取 obj.bar 属性
+        temp2 = obj.bar
+    })
+    // 在 effectFn1 中读取 obj.foo 属性
+    temp1 = obj.foo;
+})
+```
+
+在上面这段代码中，effectFn1 内部嵌套了 effectFn2，很明显，effectFn1 的执行会导致 effectFn2 的执行。需要注意的是，我们在 effectFn2 中读取了字段 obj.bar，在 effectFn1 中读取了字段 obj.foo，并且 effectFn2 的执行先于字段 obj.foo 的读取操作。在理想情况下，我们希望副作用函数与对象属性之间的联系如下：
+
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/data%20bar.png)
 
 
 
