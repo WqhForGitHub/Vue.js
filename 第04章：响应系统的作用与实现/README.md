@@ -649,6 +649,98 @@ effect(function effectFn1() {
 
 ![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/data%20bar.png)
 
+在这种情况下，我们希望当修改 obj.foo 时会触发 effectFn1 执行。由于 effectFn2 嵌套在 effectFn1 里，所以会间接触发 effectFn2 执行，而当修改 obj.bar 时，只会触发 effectFn2 执行。但结果不是这样的，我们尝试修改 obj.foo 的值，会发现输出为：
+
+```
+'effectFn1 执行'
+'effectFn2 执行'
+'effectFn2 执行'
+```
+
+一共打印三次，前两次分别是副作用函数 effectFn1 与 effectFn2 初始执行的打印结果，到这一步是正常的，问题出现在第三行打印。我们修改了字段 obj.foo 的值，发现 effectFn1 并没有重新执行，反而使得 effectFn2 重新执行了，这显然不符合预期。
+
+问题出现在哪里呢？其实就出在我们实现的 effect 函数与 activeEffect 上。观察下面这段代码：
+
+```javascript
+// 用一个全局变量存储当前激活的 effect 函数
+let activeEffect;
+function effect(fn) {
+    const effectFn = () => {
+        cleanup(effectFn);
+        // 当调用 effect 注册副作用函数时，将副作用函数赋值给 activeEffect
+        activeEffect = effectFn;
+        fn();
+        // activeEffect.deps 用来存储所有与该副作用函数相关的依赖集合
+        effectFn.deps = [];
+        // 执行副作用函数
+        effectFn();
+    }
+}
+```
+
+我们用全局变量 activeEffect 来存储通过 effect 函数注册的副作用函数，这意味着同一时刻 activeEffect 所存储的副作用函数只能有一个。当副作用函数发生嵌套时，内层副作用函数的执行会覆盖 activeEffect 的值，并且永远不会恢复到原来的值。这时如果再有响应式数据进行依赖收集，即使这个响应式数据是在外层副作用函数中读取的，它们收集到的副作用函数也都会是内层副作用函数，这就是问题所在。
+
+为了解决这个问题，我们需要一个副作用函数栈 effectStack，在副作用函数执行时，将当前副作用函数压入栈中，待副作用函数执行完毕后将其从栈中弹出，并始终让 activeEfffect 指向栈顶的副作用函数。这样就能做到一个响应式数据只会收集直接读取其值的副作用函数，而不会出现互相影响的情况，如以下代码所示：
+
+```javascript
+// 用一个全局变量存储当前激活的 effect 函数
+let activeEffect;
+// effect 栈
+const effectStack = []; // 新增
+
+function effect(fn) {
+    const effectFn = () => {
+        cleanup(effectFn);
+        // 当调用 effect 注册副作用函数时，将副作用函数赋值给 activeEffect
+        activeEffect = effectFn;
+        // 在调用副作用函数之前将当前副作用函数压入栈中
+        effectStack.push(effectFn); // 新增
+        fn();
+        // 在当前副作用函数执行完毕后，将当前副作用函数弹出栈，并把 activeEffect 还原为之前的值
+        effectStack.pop(); // 新增
+        activeEffect = effectStack[effectStack.length - 1]; // 新增
+    }
+    // activeEffect.deps 用来存储所有与该副作用函数相关的依赖集合
+    effectFn.deps = [];
+    // 执行副作用函数
+    effectFn();
+}
+```
+
+我们定义了 effectStack 数组，用它来模拟栈，activeEffect 没有变化，它仍然指向当前正在执行的副作用函数。不同的是，当前执行的副作用函数会被压入栈顶，这样当副作用函数发生嵌套时，栈底存储的就是外层副作用函数，而栈顶存储的则是内层副作用函数，如下图所示。
+
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E5%89%AF%E4%BD%9C%E7%94%A8%E5%87%BD%E6%95%B0%E6%A0%88.png)
+
+当内层副作用函数 effectFn2 执行完毕后，它会被弹出栈，并将副作用函数 effectFn1 设置为 activeEffect，如下图所示。
+
+![](https://front-end-1257950569.cos.ap-guangzhou.myqcloud.com/Vue.js/Vue.js%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E7%AC%AC4%E7%AB%A0%EF%BC%9A%E5%93%8D%E5%BA%94%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E5%89%AF%E4%BD%9C%E7%94%A8%E5%87%BD%E6%95%B0%E4%BB%8E%E6%A0%88%E4%B8%AD%E5%BC%B9%E5%87%BA.png)
+
+如此一来，响应式数据就只会收集直接读取其值的副作用函数作为依赖，从而避免发生错乱。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
