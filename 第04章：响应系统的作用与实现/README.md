@@ -717,6 +717,58 @@ function effect(fn) {
 
 如此一来，响应式数据就只会收集直接读取其值的副作用函数作为依赖，从而避免发生错乱。
 
+# 4.6 避免无限递归循环
+
+如前文所说，实现一个完善的响应系统要考虑诸多细节。而本节要介绍的无限递归循环就是其中之一，还是举个例子：
+
+```javascript
+const data = { foo: 1 };
+const obj = new Proxy(data, { /*...*/ });
+
+effect(() => obj.foo++)
+```
+
+可以看到，在 effect 注册的副作用函数内有一个自增操作 obj.foo++，该操作会引起栈溢出：
+
+```javascript
+Uncaught RangeError: Maximum call stack size exceeded
+```
+
+为什么会这样呢？接下来我们就尝试搞清楚这个问题，并提供解决方案。
+
+实际上，我们可以把 obj.foo++ 这个自增操作分开来看，它相当于：
+
+```javascript
+effect(() => {
+    // 语句
+    obj.foo = obj.foo + 1
+})
+```
+
+在这个语句中，既会读取 obj.foo 的值，又会设置 obj.foo 的值，而这就是导致问题的根本原因。我们可以尝试推理一下代码的执行流程：首先读取 obj.foo 的值，这会触发 track 操作，将当前副作用函数收集到桶中，接着将其加 1 后再赋值给 obj.foo，此时会触发 trigger 操作，即把桶中的副作用函数取出并执行。但问题是该副作用函数正在执行中，还没有执行完毕，就要开始下一次的执行。这样会导致无限递归地调用自己，于是就产生了栈溢出。
+
+解决办法并不难。通过分析这个问题我们能够发现，读取和设置操作是在同一个副作用函数内进行地。此时无论是 track 时收集的副作用函数，还是 trigger 时要触发执行的副作用函数，都是 activeEffect。基于此，我们可以在 trigger 动作发生时增加守卫条件：**如果 trigger 触发执行的副作用函数与当前正在执行的副作用函数相同，则不触发执行**，如以下代码所示：
+
+```javascript
+function trigger(target, key) {
+    const depsMap = bucket.get(target);
+    if (!depsMap) return;
+    const effects = depsMap.get(key);
+    
+    const effectsToRun = new Set();
+    effects && effects.forEach(effectFn => {
+        // 如果 trigger 触发执行的副作用函数与当前正在执行的副作用函数相同，则不触发执行
+        if (effectFn !== activeEffect) { // 新增
+            effectsToRun.add(effectFn)
+        }
+    })
+    effectsToRun.forEach(effectFn => effectFn());
+    // effects && effects.forEach(effectFn => effectFn())
+}
+```
+
+这样我们就能避免无限递归调用，从而避免栈溢出。
+
 
 
 
