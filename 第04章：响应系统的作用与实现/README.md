@@ -987,6 +987,60 @@ obj.foo++;
 
 可能你已经注意到了，这个功能有点类似于在 Vue.js 中连续多次修改响应式数据但只会触发一次更新，实际上 Vue.js 内部实现了一个更加完善的调度器，思路与上文介绍的相同。
 
+# 4.8 计算属性 computed 与 lazy
+
+前文介绍了 effect 函数，它用来注册副作用函数，同时它也允许指定一些选项参数 options，例如指定 scheduler 调度器来控制副作用函数的执行时机和方式。也介绍了用来追踪和收集依赖的 track 函数，以及用来触发副作用函数重新执行的 trigger 函数。实际上，综合这些内容，我们就可以实现 Vue.js 中一个非常重要并且非常有特色的能力，计算属性。
+
+在深入讲解计算属性之前，我们需要先来聊聊关于懒执行的 effect，即 lazy 的 effect。这是什么意思呢？举个例子，现在我们所实现的 effect 函数会立即执行传递给它的副作用函数，例如：
+
+```javascript
+effect(
+    // 这个函数会立即执行
+    () => {
+        console.log(obj.foo)
+    }
+)
+```
+
+但在有些场景下，我们并不希望它立即执行，而是希望它在需要的时候才执行，例如计算属性。这时我们可以通过在 options 中添加 lazy 属性来达到目的，如下面的代码所示：
+
+```javascript
+effect(
+    // 指定了 lazy 选项，这个函数不会立即执行
+    () => {
+        console.log(obj.foo)
+    },
+    // options
+    {
+        lazy: true
+    }
+)
+```
+
+lazy 选项和之前介绍的 scheduler 一样，它通过 options 选项对象指定。有了它，我们就可以修改 effect 函数的实现逻辑了，当 options.lazy 为 true 时，则不立即执行副作用函数：
+
+```javascript
+function effect(fn, options = {}) {
+    const effectFn = () => {
+        cleanup(effectFn);
+        activeEffect = effectFn;
+        effectStack.push(effectFn);
+        fn();
+        effectStack.pop();
+        activeEffect = effectStack[effectStack.length - 1];
+    }
+    effectFn.options = options;
+    effectFn.deps = [];
+    // 只有非 lazy 的时候，才执行
+    if (!options.lazy) { // 新增
+        // 执行副作用函数
+        effectFn();
+    }
+    // 将副作用函数作为返回值返回
+    return effectFn; // 新增
+}
+```
+
 
 
 
