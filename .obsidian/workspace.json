@@ -1,0 +1,203 @@
+{
+  "main": {
+    "id": "cfafcadc785caf38",
+    "type": "split",
+    "children": [
+      {
+        "id": "e713e4c0ad7f7750",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "66a8f107ea433058",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "都05章：非原始值的响应式方案/README.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "README"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "07cf2c9295c19a09",
+    "type": "split",
+    "children": [
+      {
+        "id": "5b6d77d814078eab",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "852458a5dfa4a5c3",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "8ef0c14afb553d09",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "633a1fedc04f0667",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "3c362184bfe33a75",
+    "type": "split",
+    "children": [
+      {
+        "id": "0c319f3c51795112",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "32cf6fee82bbf3ea",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "都05章：非原始值的响应式方案/README.md",
+                "collapseAll": true,
+                "extraContext": true,
+                "sortOrder": "alphabetical",
+                "showSearch": true,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "反向链接"
+            }
+          },
+          {
+            "id": "a7488283ec4a34c7",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "都05章：非原始值的响应式方案/README.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "出链"
+            }
+          },
+          {
+            "id": "beef086bb08630c6",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "256e46da7ada7cad",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "4eeec58bf698b99f",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "都05章：非原始值的响应式方案/README.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "大纲"
+            }
+          }
+        ],
+        "currentTab": 4
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false
+    }
+  },
+  "active": "852458a5dfa4a5c3",
+  "lastOpenFiles": [
+    "第04章：响应系统的作用与实现/README.md",
+    "都05章：非原始值的响应式方案/README.md",
+    "第03章：Vue.js 3 的设计思路/README.md",
+    "未命名.md",
+    "第05章：非原始值的响应式方案.md",
+    "都05章：非原始值的响应式方案",
+    "第02章：框架设计的核心要素/README.md",
+    "第01章：权衡的艺术/README.md"
+  ]
+}
