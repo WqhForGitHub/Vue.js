@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "e713e4c0ad7f7750",
+        "id": "c2a59b41f728a62a",
         "type": "tabs",
         "children": [
           {
-            "id": "66a8f107ea433058",
+            "id": "c7cbb349a5113580",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -189,15 +189,18 @@
       "bases:新建数据库": false
     }
   },
-  "active": "852458a5dfa4a5c3",
+  "active": "c7cbb349a5113580",
   "lastOpenFiles": [
     "第04章：响应系统的作用与实现/README.md",
+    "第04章：响应系统的作用与实现/1.js",
+    "第04章：响应系统的作用与实现/新建 文本文档.txt",
+    "第04章：响应系统的作用与实现/未命名.md",
     "都05章：非原始值的响应式方案/README.md",
     "第03章：Vue.js 3 的设计思路/README.md",
+    "第01章：权衡的艺术/README.md",
+    "第02章：框架设计的核心要素/README.md",
     "未命名.md",
     "第05章：非原始值的响应式方案.md",
-    "都05章：非原始值的响应式方案",
-    "第02章：框架设计的核心要素/README.md",
-    "第01章：权衡的艺术/README.md"
+    "都05章：非原始值的响应式方案"
   ]
 }

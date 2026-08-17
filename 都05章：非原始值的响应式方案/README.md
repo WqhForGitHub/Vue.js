@@ -57,3 +57,12 @@ console.log(obj.foo); // 1
 // 使用 Reflect.get 读取
 console.log(Reflect.get(obj, 'foo')) // 1
 ```
+可能有的读者会产生顾问：既然操作等价，那么它存在的意义是什么呢？实际上 Reflect.get 函数还能接受第三个参数，即指定接收者 receiver，你可以把它理解为函数调用过程中的 this，例如：
+```javascript
+const obj = { foo: 1 };
+
+// 直接读取
+console.log(obj.foo); // 1
+// 使用 Reflect.get 读取
+conole.log(Reflect.get(obj, 'foo')) // 1;
+```
