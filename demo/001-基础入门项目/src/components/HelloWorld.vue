@@ -6,10 +6,22 @@
 
     <h3>常用命令</h3>
     <ul>
-      <li><code>npm install</code> &mdash; 安装依赖</li>
-      <li><code>npm run serve</code> &mdash; 启动开发服务器</li>
-      <li><code>npm run build</code> &mdash; 构建生产版本</li>
-      <li><code>npm run lint</code> &mdash; 代码检查</li>
+      <li>
+        <code>npm install</code>
+        &mdash; 安装依赖
+      </li>
+      <li>
+        <code>npm run serve</code>
+        &mdash; 启动开发服务器
+      </li>
+      <li>
+        <code>npm run build</code>
+        &mdash; 构建生产版本
+      </li>
+      <li>
+        <code>npm run lint</code>
+        &mdash; 代码检查
+      </li>
     </ul>
   </div>
 </template>
@@ -20,10 +32,10 @@ export default {
   props: {
     msg: {
       type: String,
-      default: ''
-    }
-  }
-}
+      default: '',
+    },
+  },
+};
 </script>
 
 <style scoped>

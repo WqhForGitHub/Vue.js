@@ -1,0 +1,35 @@
+{
+    "name":  "demo-158",
+    "version":  "0.1.0",
+    "private":  true,
+    "scripts":  {
+                    "serve":  "vue-cli-service serve",
+                    "build":  "vue-cli-service build",
+                    "lint":  "vue-cli-service lint",
+                    "format":  "prettier --write .",
+                    "format:check":  "prettier --check .",
+                    "lint:check":  "eslint . --ext .js,.jsx,.ts,.tsx,.vue"
+                },
+    "dependencies":  {
+                         "core-js":  "^3.8.3",
+                         "vue":  "^2.7.16",
+                         "vuex":  "^3.6.2",
+                         "vue-router":  "^3.6.5"
+                     },
+    "devDependencies":  {
+                            "@vue/cli-plugin-babel":  "~5.0.8",
+                            "@vue/cli-service":  "~5.0.8",
+                            "vue-template-compiler":  "^2.7.16",
+                            "eslint":  "^8.57.1",
+                            "prettier":  "^3.3.3",
+                            "eslint-config-prettier":  "^9.1.0",
+                            "eslint-plugin-prettier":  "^5.2.1",
+                            "eslint-plugin-vue":  "^9.28.0",
+                            "vue-eslint-parser":  "^9.4.3"
+                        },
+    "browserslist":  [
+                         "\u003e 1%",
+                         "last 2 versions",
+                         "not dead"
+                     ]
+}
