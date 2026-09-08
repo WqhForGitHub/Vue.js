@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const demoTitle = '基础入门项目'
+const demoTitle = '基础入门项目';
 </script>
 
 <template>
@@ -7,7 +7,9 @@ const demoTitle = '基础入门项目'
     <h1>关于本项目</h1>
     <div class="info-card">
       <p class="demo-name">项目名称：{{ demoTitle }}</p>
-      <p class="demo-desc">这是一个基于 Vue 3 + TypeScript + Vite + Vue Router + Pinia 的示例项目。</p>
+      <p class="demo-desc">
+        这是一个基于 Vue 3 + TypeScript + Vite + Vue Router + Pinia 的示例项目。
+      </p>
     </div>
 
     <div class="info-card">

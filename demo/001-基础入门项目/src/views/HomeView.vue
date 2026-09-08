@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { useCounterStore } from '@/stores/counter'
-import HelloWorld from '@/components/HelloWorld.vue'
+import { useCounterStore } from '@/stores/counter';
+import HelloWorld from '@/components/HelloWorld.vue';
 
-const counter = useCounterStore()
-const demoTitle = '基础入门项目'
+const counter = useCounterStore();
+const demoTitle = '基础入门项目';
 </script>
 
 <template>

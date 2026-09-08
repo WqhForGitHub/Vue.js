@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView } from 'vue-router';
 
-const demoTitle = '基础入门项目'
+const demoTitle = '基础入门项目';
 </script>
 
 <template>
